@@ -3,6 +3,7 @@ import { defineConfig } from 'vitepress'
 export default defineConfig({
   title: 'MyJpa-Plus',
   description: 'Type-safe JPA Specification builder with lambda-based fluent API',
+  base: '/myjpa-plus-docs/',
   lastUpdated: true,
   cleanUrls: false,
 
