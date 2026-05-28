@@ -1,28 +1,67 @@
 # 更新日志
 
-## v0.0.3
+## [1.0.0] - 2026-05-28
 
-### 功能
+### 破坏性变更
+- **`DeleteSpec` 现在要求显式指定 WHERE 条件。** 在不带任何条件的情况下调用 `execute()` 或 `toDelete()` 会抛出 `IllegalStateException`。请使用新的 `deleteAll(EntityManager)` 进行无条件删除。
+- **修复了 `resolveOr()` 空分组的语义：** 之前返回 `cb.conjunction()`（1=1），现在返回 `cb.disjunction()`（1=0），语义上更加正确。
 
-- Lambda 类型安全查询构建器 (`QuerySpec`)
-- 流式 API 支持 AND/OR/NOT 条件分组
-- 条件守卫方法，支持动态查询构建
-- JOIN 支持（INNER、LEFT、FETCH、LEFT_FETCH），可嵌套条件
-- EXISTS/NOT EXISTS 关联子查询，提供 `correlatedEq` 快捷方式
-- 批量更新和删除操作（`UpdateSpec`、`DeleteSpec`）
-- UpdateSpec 中的条件 SET
-- 软删除支持，使用 `@SoftDelete` 注解
-- `MyJpaRepository` 基础接口，提供软删除方法
-- `MyJpaTemplate` 便利类，支持流式 API
-- `ProjectionSpec` DTO 投影查询
-- `EntityGraphHelper` 动态抓取策略
-- `PageableHelper` 分页集成
-- `InClauseBuilder` 自动批处理（Oracle 兼容）
-- `BaseEntity` 审计字段（createdAt、updatedAt）
-- Null 安全操作（eq/eq(null) → IS NULL）
-- 多字段 LIKE 搜索（`multiLike`）
-- 忽略大小写比较（`eqIgnoreCase`、`likeIgnoreCase`）
-- 基于 Consumer 的 API，自动关闭分组
-- 查询超时和锁模式支持
+### 新增
+- `eqIgnoreCase` / `likeIgnoreCase` — 不区分大小写的字符串条件（基于 UPPER）
+- `groupBy(SFunction...)` — 支持 GROUP BY 子句
+- `having(BiFunction)` — 支持聚合查询的 HAVING 子句
+- `where(BiFunction)` — 原始 Predicate 注入，作为兜底方案
+- `not(Consumer)` — 否定条件组
+- `startsWith` / `endsWith` / `contains` — 便捷的 LIKE 方法
+- `in(Collection)` / `notIn(Collection)` 重载
+- Consumer 模式：`or(Consumer)` / `join(field, Consumer)` / `leftJoin(field, Consumer)`
 - Spring Boot 自动配置
-- 可配置的最大结果数和深度分页警告
+- 通过 `correlate(root)` 支持子查询关联
+- `SubQuerySpec.correlatedEq()` — 类型化关联 Predicate 构建器
+- `LambdaUtils` 属性名缓存（按 implClass + methodName）
+- `in` / `notIn` 的空值校验
+- `eq(field, null)` 自动转换为 `IS NULL`
+- `endOr()` 在调用不匹配时抛出 `IllegalStateException`
+- `DeleteSpec.deleteAll(EntityManager)` / `deleteAllInTransaction(EntityManager)` — 安全的无条件删除
+- SoftDeleteHelper Specification 缓存（按 entityClass）
+- `ProjectionSpec` — DTO 投影查询，支持 Tuple 和构造函数投影
+- `BaseEntity` — 抽象基础实体，提供审计字段（id、createdAt、updatedAt）
+- `MyJpaTemplate` 流式 API（`findAllStream`）
+- `MyJpaTemplate` 批量操作（`executeBatch`）
+- 所有条件构建器的条件守卫方法
+- `QuerySpec.timeout()` / `lockMode()` / `applyQuerySettings()` — 查询提示支持
+- `EntityGraphHelper` — 动态 JPA EntityGraph 构建器
+- `PageableHelper` — QuerySpec/Pageable 排序集成
+- `InClauseBuilder` — IN 子句自动批处理（Oracle 兼容）
+
+### 修复
+- `SubQuerySpec` 条件不再互相覆盖
+- `select()` 不再被 `resolveExists` 静默覆盖
+- `resolveSimple` 正确处理 IN/NOT_IN 中的 Collection 值
+- `SoftDeleteHelper.findSoftDeleteField()` 的竞态条件（get + computeIfAbsent）
+- `AbstractBulkOperationSpec.executeInTransaction()` 现在捕获 `Exception`（而非仅 `RuntimeException`）
+
+### 变更
+- **消除了条件方法的三层重复：** 创建 `PredicateHelper` 共享工具类，`SubQuerySpec` 和 `AbstractBulkOperationSpec` 统一委托给 `PredicateHelper` 构建 Predicate
+- `ConditionNode` → sealed 接口；所有实现类均为 `final`
+- SpotBugs 阈值设为 Medium
+- JaCoCo 覆盖率最低 60%（排除 autoconfigure）
+- 启用 doclint（`reference,html`）
+- 版本从 `0.0.1` 升级至 `1.0.0`（语义化版本）
+
+### 基础设施
+- GitHub Actions CI（JDK 17/21 矩阵 + v* 标签触发发布部署）
+- Dependabot 自动依赖更新
+- CODE_OF_CONDUCT、ISSUE_TEMPLATE、PR_TEMPLATE、.editorconfig
+
+## [0.0.1] - 2026-05-20（原始 jpa-extensions 分支）
+
+### 初始发布
+- 基于 Lambda API 的类型安全 JPA `Specification` 构建器
+- `QuerySpec<T>`：eq, ne, gt, ge, lt, le, like, notLike, in, notIn, between, isNull, isNotNull
+- JOIN 支持：`join()`、`leftJoin()` 配合 `JoinGroup`
+- OR 分组：`or()` 配合 `OrGroup`，在连接中嵌套使用 `OrJoinGroup`
+- EXISTS 子查询配合 `SubQuerySpec`
+- 通过 `multiLike` 实现多字段 LIKE 搜索
+- Spring MVC 参数解析器：`@SearchParam`、`@ListParam`
+- 针对 Hibernate 延迟代理的 Jackson 序列化器

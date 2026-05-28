@@ -20,7 +20,7 @@ export default defineConfig({
           { text: 'Guide', link: '/guide/getting-started' },
           { text: 'API', link: '/guide/api' },
           {
-            text: 'v0.0.3',
+            text: 'v1.0.0',
             items: [
               { text: 'Changelog', link: '/changelog' },
               { text: 'Contributing', link: '/contributing' }
@@ -44,7 +44,8 @@ export default defineConfig({
                 { text: 'Sub Queries', link: '/guide/sub-queries' },
                 { text: 'Update & Delete', link: '/guide/bulk-operations' },
                 { text: 'Soft Delete', link: '/guide/soft-delete' },
-                { text: 'MyJpaTemplate', link: '/guide/myjpa-template' }
+                { text: 'MyJpaTemplate', link: '/guide/myjpa-template' },
+                { text: 'Projection', link: '/guide/projection' }
               ]
             },
             {
@@ -75,7 +76,7 @@ export default defineConfig({
           { text: '指南', link: '/zh/guide/getting-started' },
           { text: 'API', link: '/zh/guide/api' },
           {
-            text: 'v0.0.3',
+            text: 'v1.0.0',
             items: [
               { text: '更新日志', link: '/zh/changelog' },
               { text: '贡献指南', link: '/zh/contributing' }
@@ -99,7 +100,8 @@ export default defineConfig({
                 { text: '子查询', link: '/zh/guide/sub-queries' },
                 { text: '批量更新与删除', link: '/zh/guide/bulk-operations' },
                 { text: '软删除', link: '/zh/guide/soft-delete' },
-                { text: 'MyJpaTemplate', link: '/zh/guide/myjpa-template' }
+                { text: 'MyJpaTemplate', link: '/zh/guide/myjpa-template' },
+                { text: '投影查询', link: '/zh/guide/projection' }
               ]
             },
             {
