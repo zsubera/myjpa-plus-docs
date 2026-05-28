@@ -100,6 +100,20 @@ new QuerySpec<User>().multiLike(keyword, User::getName, User::getEmail, User::ge
 
 生成的条件：`WHERE name LIKE '%keyword%' OR email LIKE '%keyword%' OR phone LIKE '%keyword%'`
 
+## 条件守卫方法
+
+所有条件方法都有一个 `boolean condition` 第一参数的变体。只有当 `condition` 为 `true` 时才会添加条件：
+
+```java
+// 仅在 status 不为空时添加过滤条件
+new QuerySpec<User>()
+    .eq(status != null, User::getStatus, status)
+    .gt(minAge != null, User::getAge, minAge)
+    .toSpecification()
+```
+
+这对于构建动态查询（过滤条件可选）非常有用。
+
 ## OR 分组
 
 ### Consumer 模式（推荐）
@@ -207,6 +221,9 @@ Specification<User> combined = base.or(ageFilter);
 // 与外部 Specification 组合
 Specification<User> external = (root, query, cb) -> cb.equal(root.get("type"), "USER");
 Specification<User> combined = base.toSpecification(external);
+
+// 合并另一个 QuerySpec 的条件
+QuerySpec<User> merged = base.then(ageFilter);
 ```
 
 ## 查询设置
@@ -227,4 +244,25 @@ new QuerySpec<User>()
     .lockMode(LockModeType.PESSIMISTIC_WRITE)
     .eq(User::getId, userId)
     .toSpecification()
+```
+
+## 获取 Sort 和设置
+
+```java
+QuerySpec<User> qs = new QuerySpec<User>()
+    .orderByAsc(User::getName)
+    .orderByDesc(User::getCreatedAt)
+    .timeout(30);
+
+// 获取 Sort 用于 Spring Data
+Sort sort = qs.getSort();
+
+// 获取超时设置
+Integer timeout = qs.getQueryTimeout();
+
+// 获取锁模式
+LockModeType lockMode = qs.getLockMode();
+
+// 应用设置到 TypedQuery
+qs.applyQuerySettings(typedQuery);
 ```

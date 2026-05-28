@@ -1,98 +1,143 @@
 # MyJpaTemplate
 
-`MyJpaTemplate` 是一个便利类，为常见操作提供更简单的 API。
+`MyJpaTemplate` is a convenience class that provides a simpler API for common operations.
 
-## 配置
+## Configuration
 
-MyJpaTemplate 是自动配置的，直接注入即可：
+MyJpaTemplate is auto-configured. Just inject it:
 
 ```java
 @Autowired
 private MyJpaTemplate template;
 ```
 
-## 查询操作
+## Query Operations
 
-### 查找所有
+### Find All
 
 ```java
-// 使用 QuerySpec
+// Using QuerySpec
 List<User> users = template.findAll(User.class, 
     new QuerySpec<User>().eq(User::getStatus, "ACTIVE"));
 
-// 限制返回数量
+// Limit results
 List<User> users = template.findAll(User.class, 
     new QuerySpec<User>().eq(User::getStatus, "ACTIVE"), 100);
 
-// 使用 EntityGraph
+// With EntityGraph
 List<User> users = template.findAll(User.class, 
     new QuerySpec<User>().eq(User::getStatus, "ACTIVE"),
     EntityGraphHelper.forEntity(User.class).add("department"));
+
+// With EntityGraph and limit
+List<User> users = template.findAll(User.class, 
+    new QuerySpec<User>().eq(User::getStatus, "ACTIVE"),
+    EntityGraphHelper.forEntity(User.class).add("department"), 100);
 ```
 
-### 查找单个
+### Find with Raw Specification
 
 ```java
-Optional<User> user = template.findOne(User.class,
-    new QuerySpec<User>().eq(User::getEmail, "john@example.com"));
+// Using raw Specification
+List<User> users = template.find(User.class,
+    (root, query, cb) -> cb.equal(root.get("status"), "ACTIVE"));
+
+// With limit
+List<User> users = template.find(User.class,
+    (root, query, cb) -> cb.equal(root.get("status"), "ACTIVE"), 100);
 ```
 
-### 统计
+### Streaming Results
+
+For large result sets without memory limits:
 
 ```java
-long count = template.count(User.class,
-    new QuerySpec<User>().eq(User::getStatus, "ACTIVE"));
+// Stream all results
+try (Stream<User> stream = template.findAllStream(User.class, 
+    new QuerySpec<User>().eq(User::getStatus, "ACTIVE"))) {
+    stream.forEach(user -> process(user));
+}
+
+// Stream with EntityGraph
+try (Stream<User> stream = template.findAllStream(User.class, 
+    new QuerySpec<User>().eq(User::getStatus, "ACTIVE"),
+    EntityGraphHelper.forEntity(User.class).add("department"))) {
+    stream.forEach(user -> process(user));
+}
 ```
 
-### 判断存在
+### Pagination
 
 ```java
-boolean exists = template.exists(User.class,
-    new QuerySpec<User>().eq(User::getEmail, "john@example.com"));
+// Using Pageable
+Page<User> page = template.findAll(User.class,
+    new QuerySpec<User>().eq(User::getStatus, "ACTIVE"),
+    PageRequest.of(0, 20, Sort.by("name")));
+
+// With raw Specification
+Page<User> page = template.findPage(User.class,
+    (root, query, cb) -> cb.equal(root.get("status"), "ACTIVE"),
+    PageRequest.of(0, 20));
 ```
 
-## 更新操作
+## Update Operations
 
 ```java
 int count = template.update(User.class)
     .set(User::setStatus, "INACTIVE")
     .eq(User::getStatus, "PENDING")
     .execute(em);
+
+// Batch update with size limit
+int count = template.executeBatch(
+    template.update(User.class)
+        .set(User::setStatus, "PROCESSED")
+        .eq(User::getStatus, "PENDING"),
+    100
+);
 ```
 
-## 删除操作
+## Delete Operations
 
 ```java
 int count = template.delete(User.class)
     .eq(User::getStatus, "DELETED")
     .execute(em);
-```
 
-## 分页
-
-```java
-// 使用 Pageable
-Page<User> page = template.findAll(User.class,
-    new QuerySpec<User>().eq(User::getStatus, "ACTIVE"),
-    PageRequest.of(0, 20, Sort.by("name")));
+// Batch delete with size limit
+int count = template.executeBatch(
+    template.delete(User.class)
+        .eq(User::getStatus, "EXPIRED"),
+    100
+);
 ```
 
 ## EntityGraph
 
 ```java
-// 创建 EntityGraph 辅助器
+// Create EntityGraph helper
 EntityGraphHelper<User> graph = EntityGraphHelper.forEntity(User.class)
     .add("department")
     .add("roles.permissions");
 
-// 在查询中使用
+// Use in query
 List<User> users = template.findAll(User.class,
     new QuerySpec<User>().eq(User::getStatus, "ACTIVE"), graph);
 ```
 
-## 自定义配置
+## Constants
 
 ```java
-// MyJpaTemplate 接受自定义的最大结果数和分页阈值
+// Default max results for findAll/find
+MyJpaTemplate.DEFAULT_MAX_RESULTS  // 10000
+
+// Deep pagination warning threshold
+MyJpaTemplate.DEFAULT_DEEP_PAGINATION_OFFSET_THRESHOLD  // 100000
+```
+
+## Custom Configuration
+
+```java
+// MyJpaTemplate accepts custom max results and pagination threshold
 MyJpaTemplate template = new MyJpaTemplate(5000, 50000);
 ```

@@ -1,25 +1,25 @@
-# 配置
+# Configuration
 
-MyJpa-Plus 通过 Spring Boot 的 `application.yml` 或 `application.properties` 进行配置。
+MyJpa-Plus is configured via Spring Boot's `application.yml` or `application.properties`.
 
-## 配置属性
+## Configuration Properties
 
-前缀：`myjpa-plus`
+Prefix: `myjpa-plus`
 
-### 软删除
+### Soft Delete
 
-| 属性 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `myjpa-plus.soft-delete.auto-filter` | boolean | `true` | 自动对查询应用软删除过滤 |
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `myjpa-plus.soft-delete.auto-filter` | boolean | `true` | Automatically apply soft delete filtering to queries |
 
-### 查询
+### Query
 
-| 属性 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `myjpa-plus.query.max-results` | int | `10000` | findAll/find 方法返回的最大行数 |
-| `myjpa-plus.query.deep-pagination-offset-threshold` | int | `100000` | 深度分页警告的 offset 阈值 |
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `myjpa-plus.query.max-results` | int | `10000` | Maximum rows returned by findAll/find methods |
+| `myjpa-plus.query.deep-pagination-offset-threshold` | int | `100000` | Offset threshold for deep pagination warnings |
 
-## application.yml 示例
+## application.yml Example
 
 ```yaml
 myjpa-plus:
@@ -30,7 +30,7 @@ myjpa-plus:
     deep-pagination-offset-threshold: 100000
 ```
 
-## application.properties 示例
+## application.properties Example
 
 ```properties
 myjpa-plus.soft-delete.auto-filter=true
@@ -38,17 +38,17 @@ myjpa-plus.query.max-results=10000
 myjpa-plus.query.deep-pagination-offset-threshold=100000
 ```
 
-## 自动配置
+## Auto-Configuration
 
-当类路径上存在 Spring Data JPA 时，MyJpa-Plus 会自动配置：
+When Spring Data JPA is on the classpath, MyJpa-Plus auto-configures:
 
-- `MyJpaPlusAutoConfiguration` - 主配置类
-- `MyJpaTemplate` - 自动配置的模板 Bean
-- `SoftDeleteFilterBean` - 当 `auto-filter=true` 时自动配置
+- `MyJpaPlusAutoConfiguration` - Main configuration class
+- `MyJpaTemplate` - Auto-configured template bean
+- `SoftDeleteFilterBean` - Auto-configured when `auto-filter=true`
 
-## 自定义 MyJpaTemplate
+## Custom MyJpaTemplate
 
-要自定义 `MyJpaTemplate`，创建你自己的 Bean：
+To customize `MyJpaTemplate`, create your own bean:
 
 ```java
 @Configuration

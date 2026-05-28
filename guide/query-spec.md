@@ -100,6 +100,20 @@ new QuerySpec<User>().multiLike(keyword, User::getName, User::getEmail, User::ge
 
 This generates: `WHERE name LIKE '%keyword%' OR email LIKE '%keyword%' OR phone LIKE '%keyword%'`
 
+## Conditional (Guarded) Methods
+
+All condition methods have a `boolean condition` first-parameter variant. The condition is only added when `condition` is `true`:
+
+```java
+// Only add status filter if status is not null
+new QuerySpec<User>()
+    .eq(status != null, User::getStatus, status)
+    .gt(minAge != null, User::getAge, minAge)
+    .toSpecification()
+```
+
+This is especially useful for building dynamic queries where filters are optional.
+
 ## OR Groups
 
 ### Consumer Pattern (Recommended)
@@ -207,6 +221,9 @@ Specification<User> combined = base.or(ageFilter);
 // With external Specification
 Specification<User> external = (root, query, cb) -> cb.equal(root.get("type"), "USER");
 Specification<User> combined = base.toSpecification(external);
+
+// Merge conditions from another QuerySpec
+QuerySpec<User> merged = base.then(ageFilter);
 ```
 
 ## Query Settings
@@ -227,4 +244,25 @@ new QuerySpec<User>()
     .lockMode(LockModeType.PESSIMISTIC_WRITE)
     .eq(User::getId, userId)
     .toSpecification()
+```
+
+## Exposing Sort and Settings
+
+```java
+QuerySpec<User> qs = new QuerySpec<User>()
+    .orderByAsc(User::getName)
+    .orderByDesc(User::getCreatedAt)
+    .timeout(30);
+
+// Get Sort for Spring Data
+Sort sort = qs.getSort();
+
+// Get timeout
+Integer timeout = qs.getQueryTimeout();
+
+// Get lock mode
+LockModeType lockMode = qs.getLockMode();
+
+// Apply settings to TypedQuery
+qs.applyQuerySettings(typedQuery);
 ```

@@ -1,20 +1,20 @@
-# 批量更新与删除
+# Bulk Operations
 
-MyJpa-Plus 提供 `UpdateSpec` 和 `DeleteSpec` 用于类型安全的批量操作。
+MyJpa-Plus provides `UpdateSpec` and `DeleteSpec` for type-safe bulk operations.
 
 ## UpdateSpec
 
-### 基本更新
+### Basic Update
 
 ```java
-// 更新匹配记录的状态
+// Update status of matching records
 int count = new UpdateSpec<>(User.class)
     .set(User::setStatus, "INACTIVE")
     .eq(User::getLastLoginAt, null)
     .execute(entityManager);
 ```
 
-### 多字段更新
+### Multi-Field Update
 
 ```java
 int count = new UpdateSpec<>(User.class)
@@ -24,7 +24,19 @@ int count = new UpdateSpec<>(User.class)
     .execute(entityManager);
 ```
 
-### 带 OR 条件的更新
+### Conditional SET
+
+Use the guarded variant to conditionally set fields:
+
+```java
+int count = new UpdateSpec<>(User.class)
+    .set(User::setStatus, "INACTIVE")
+    .set(name != null, User::setName, name)
+    .eq(User::getStatus, "PENDING")
+    .execute(entityManager);
+```
+
+### Update with OR Conditions
 
 ```java
 int count = new UpdateSpec<>(User.class)
@@ -35,29 +47,61 @@ int count = new UpdateSpec<>(User.class)
     .execute(entityManager);
 ```
 
-### 事务中更新
+### Update with NOT Conditions
 
 ```java
-// 自动管理事务
+int count = new UpdateSpec<>(User.class)
+    .set(User::setStatus, "INACTIVE")
+    .not(n -> n.eq(User::getRole, "ADMIN"))
+    .execute(entityManager);
+```
+
+### Transaction Management
+
+```java
+// Auto-manage transaction
 int count = new UpdateSpec<>(User.class)
     .set(User::setStatus, "INACTIVE")
     .eq(User::getStatus, "PENDING")
     .executeInTransaction(entityManager);
 ```
 
-### 限量更新
+### Limited Update
 
 ```java
-// 最多更新 100 条记录
+// Update at most 100 records
 int count = new UpdateSpec<>(User.class)
     .set(User::setStatus, "PROCESSED")
     .eq(User::getStatus, "PENDING")
     .executeLimited(entityManager, 100);
 ```
 
+### Update All (Unconditional)
+
+```java
+// Warning: updates all records!
+int count = new UpdateSpec<>(User.class)
+    .set(User::setStatus, "ARCHIVED")
+    .updateAll(entityManager);
+
+// With transaction management
+int count = new UpdateSpec<>(User.class)
+    .set(User::setStatus, "ARCHIVED")
+    .updateAllInTransaction(entityManager);
+```
+
+### Build CriteriaUpdate Without Executing
+
+```java
+CriteriaUpdate<User> cu = new UpdateSpec<>(User.class)
+    .set(User::setStatus, "INACTIVE")
+    .eq(User::getStatus, "PENDING")
+    .toUpdate(entityManager);
+```
+
 ## DeleteSpec
 
-### 基本删除
+### Basic Delete
 
 ```java
 int count = new DeleteSpec<>(User.class)
@@ -65,7 +109,7 @@ int count = new DeleteSpec<>(User.class)
     .execute(entityManager);
 ```
 
-### 复杂条件删除
+### Complex Condition Delete
 
 ```java
 int count = new DeleteSpec<>(User.class)
@@ -76,15 +120,19 @@ int count = new DeleteSpec<>(User.class)
     .execute(entityManager);
 ```
 
-### 删除全部（无条件）
+### Delete All (Unconditional)
 
 ```java
-// 警告：删除所有记录！
+// Warning: deletes all records!
 int count = new DeleteSpec<>(User.class)
     .deleteAll(entityManager);
+
+// With transaction management
+int count = new DeleteSpec<>(User.class)
+    .deleteAllInTransaction(entityManager);
 ```
 
-### 限量删除
+### Limited Delete
 
 ```java
 int count = new DeleteSpec<>(User.class)
@@ -92,35 +140,58 @@ int count = new DeleteSpec<>(User.class)
     .executeLimited(entityManager, 1000);
 ```
 
-## MyJpaTemplate
+### Build CriteriaDelete Without Executing
 
-使用 `MyJpaTemplate` 更方便：
+```java
+CriteriaDelete<User> cd = new DeleteSpec<>(User.class)
+    .eq(User::getStatus, "DELETED")
+    .toDelete(entityManager);
+```
+
+## Using MyJpaTemplate
+
+`MyJpaTemplate` provides a more convenient way:
 
 ```java
 @Autowired
 private MyJpaTemplate template;
 
-// 更新
+// Update
 int count = template.update(User.class)
     .set(User::setStatus, "INACTIVE")
     .eq(User::getStatus, "PENDING")
     .execute(em);
 
-// 删除
+// Delete
 int count = template.delete(User.class)
     .eq(User::getStatus, "DELETED")
     .execute(em);
+
+// Batch update with size limit
+int count = template.executeBatch(
+    template.update(User.class)
+        .set(User::setStatus, "PROCESSED")
+        .eq(User::getStatus, "PENDING"),
+    100
+);
+
+// Batch delete with size limit
+int count = template.executeBatch(
+    template.delete(User.class)
+        .eq(User::getStatus, "EXPIRED"),
+    100
+);
 ```
 
-## 错误处理
+## Error Handling
 
 ```java
-// 如果没有条件，抛出 IllegalStateException（防止意外批量更新/删除）
+// Throws IllegalStateException if no conditions (prevents accidental bulk update/delete)
 new UpdateSpec<>(User.class)
     .set(User::setStatus, "NEW")
-    .execute(em);  // 抛出异常！
+    .execute(em);  // Throws exception!
 
-// 无条件操作需要显式调用 deleteAll()
+// Unconditional operations require explicit call
 new DeleteSpec<>(User.class)
-    .deleteAll(em);  // 正常 - 明确意图
+    .deleteAll(em);  // OK - clear intent
 ```

@@ -1,8 +1,8 @@
-# 软删除
+# Soft Delete
 
-MyJpa-Plus 使用 `@SoftDelete` 注解提供内置的软删除支持。
+MyJpa-Plus provides built-in soft delete support using the `@SoftDelete` annotation.
 
-## 定义软删除实体
+## Define Soft Delete Entity
 
 ```java
 @Entity
@@ -16,109 +16,119 @@ public class Product {
     @SoftDelete
     private Boolean deleted = false;
     
-    // getter 和 setter...
+    // getters and setters...
 }
 ```
 
-## 使用 MyJpaRepository
+## Using MyJpaRepository
 
-`MyJpaRepository` 接口提供内置的软删除方法：
+The `MyJpaRepository` interface provides built-in soft delete methods:
 
 ```java
 public interface ProductRepository extends MyJpaRepository<Product, Long> {
 }
 
-// 查找所有未删除的产品
+// Find all non-deleted products
 List<Product> products = repository.findNotDeletedAll();
 
-// 带条件查找未删除的实体
+// Find non-deleted entities with conditions
 List<Product> products = repository.findNotDeletedAll(spec);
 
-// 分页查找未删除的实体
+// Paginated non-deleted entities
 Page<Product> products = repository.findNotDeletedAll(spec, pageable);
 
-// 查找单个未删除的实体
+// Find single non-deleted entity
 Optional<Product> product = repository.findNotDeletedOne(spec);
 
-// 根据 ID 查找未删除的实体
+// Find non-deleted entity by ID
 Optional<Product> product = repository.findNotDeletedById(id);
 
-// 统计未删除的实体数量
+// Count non-deleted entities
 long count = repository.countNotDeleted();
 long count = repository.countNotDeleted(spec);
 ```
 
-## 使用 SoftDeleteHelper
+## Using SoftDeleteHelper
 
-需要更多控制时，直接使用 `SoftDeleteHelper`：
+For more control, use `SoftDeleteHelper` directly:
 
 ```java
-// 获取未删除实体的 Specification
+// Get Specification for non-deleted entities
 Specification<Product> notDeleted = SoftDeleteHelper.isNotDeleted(Product.class);
 List<Product> products = repository.findAll(notDeleted);
 
-// 仅获取已删除的实体
+// Get only deleted entities
 Specification<Product> deleted = SoftDeleteHelper.isDeleted(Product.class);
 List<Product> archived = repository.findAll(deleted);
 
-// 与其他 Specification 组合
+// Combine with other Specifications
 Specification<Product> active = SoftDeleteHelper.isNotDeleted(Product.class)
     .and((root, query, cb) -> cb.equal(root.get("status"), "ACTIVE"));
 List<Product> products = repository.findAll(active);
 ```
 
-## 使用 QuerySpec
+## Using QuerySpec
 
 ```java
-// 构建带软删除过滤的 QuerySpec
+// Build QuerySpec with soft delete filter
 QuerySpec<Product> qs = SoftDeleteHelper.notDeletedQuery(Product.class);
 qs.eq(Product::getCategory, "Electronics");
 List<Product> products = repository.findAll(qs.toSpecification());
 ```
 
-## 自动过滤配置
+## Utility Methods
 
-在 `application.yml` 中启用自动软删除过滤：
+```java
+// Find the soft delete field name
+String fieldName = SoftDeleteHelper.findSoftDeleteField(Product.class);
+
+// Check if an entity instance is soft-deleted
+boolean isDeleted = SoftDeleteHelper.isSoftDeleted(Product.class, product);
+```
+
+## Auto-Filter Configuration
+
+Enable automatic soft delete filtering in `application.yml`:
 
 ```yaml
 myjpa-plus:
   soft-delete:
-    auto-filter: true  # 默认：true
+    auto-filter: true  # Default: true
 ```
 
 ## SoftDeleteFilterBean
 
-使用 `SoftDeleteFilterBean` 进行编程控制：
+Use `SoftDeleteFilterBean` for programmatic control:
 
 ```java
 @Autowired
 private SoftDeleteFilterBean filterBean;
 
-// 对任何 Specification 应用软删除过滤
+// Apply soft delete filter to any Specification
 Specification<Product> spec = ...;
 Specification<Product> filtered = filterBean.apply(spec, Product.class);
 
-// 检查实体是否有软删除字段
+// Check if entity has soft delete field
 boolean hasSoftDelete = filterBean.hasSoftDeleteField(Product.class);
 
-// 注册实体以缓存结果
+// Register entity for caching
 filterBean.registerEntity(Product.class);
 ```
 
-## Boolean 与 Nullable Boolean
+## Boolean vs Nullable Boolean
 
-MyJpa-Plus 处理 `boolean` 和 `Boolean` 两种类型：
+MyJpa-Plus handles both `boolean` and `Boolean` types:
 
 ```java
-// 基本类型 boolean - WHERE deleted = false
+// Primitive boolean - WHERE deleted = false
 @SoftDelete
 private boolean deleted;
 
-// 包装类型 Boolean - WHERE deleted IS NULL OR deleted = false
+// Wrapper Boolean - WHERE deleted IS NULL OR deleted = false
 @SoftDelete
 private Boolean deleted;
 ```
 
-可空的 `Boolean` 类型允许三种状态：
-- `null` 或 `false` = 未删除
-- `true` = 已删除
+The nullable `Boolean` type allows three states:
+- `null` or `false` = not deleted
+- `true` = deleted

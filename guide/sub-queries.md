@@ -1,11 +1,11 @@
-# 子查询
+# Sub Queries
 
-MyJpa-Plus 支持 EXISTS 和 NOT EXISTS 子查询，并提供类型安全条件。
+MyJpa-Plus supports EXISTS and NOT EXISTS subqueries with type-safe conditions.
 
 ## EXISTS
 
 ```java
-// 查找下过订单的客户
+// Find customers who have placed orders
 List<Customer> customers = customerRepository.findAll(
     new QuerySpec<Customer>()
         .exists(Order.class, sub -> sub
@@ -17,7 +17,7 @@ List<Customer> customers = customerRepository.findAll(
 ## NOT EXISTS
 
 ```java
-// 查找没有下过订单的客户
+// Find customers who have not placed orders
 List<Customer> customers = customerRepository.findAll(
     new QuerySpec<Customer>()
         .notExists(Order.class, sub -> sub
@@ -26,12 +26,12 @@ List<Customer> customers = customerRepository.findAll(
 );
 ```
 
-## 关联子查询
+## Correlated Subqueries
 
-使用 `correlated()` 引用外部查询：
+Use `correlated()` to reference the outer query:
 
 ```java
-// 查找有超过 1000 元订单的客户
+// Find customers with orders over 1000
 List<Customer> customers = customerRepository.findAll(
     new QuerySpec<Customer>()
         .exists(Order.class, sub -> sub
@@ -42,9 +42,9 @@ List<Customer> customers = customerRepository.findAll(
 );
 ```
 
-## correlatedEq 快捷方式
+## correlatedEq Shortcut
 
-常见关联模式的快捷方式：
+Shortcut for common correlation patterns:
 
 ```java
 List<Customer> customers = customerRepository.findAll(
@@ -56,9 +56,9 @@ List<Customer> customers = customerRepository.findAll(
 );
 ```
 
-## 子查询条件
+## Subquery Conditions
 
-子查询中可使用 QuerySpec 的所有条件：
+All QuerySpec conditions are available in subqueries:
 
 ```java
 new QuerySpec<Customer>()
@@ -66,18 +66,32 @@ new QuerySpec<Customer>()
         .eq(Order::getStatus, "PAID")
         .gt(Order::getAmount, 100)
         .between(Order::getCreatedAt, startDate, endDate)
-        .like(Order::getRemark, "%紧急%"))
+        .like(Order::getRemark, "%urgent%"))
     .toSpecification()
 ```
 
-## Select 子句
+## Select Clause
 
-自定义子查询的选择：
+Customize the subquery selection:
 
 ```java
 new QuerySpec<Customer>()
     .exists(Order.class, sub -> sub
         .select(Order::getId)
         .eq(Order::getStatus, "PAID"))
+    .toSpecification()
+```
+
+## Raw Predicate in Subqueries
+
+For complex correlation conditions:
+
+```java
+new QuerySpec<Customer>()
+    .exists(Order.class, sub -> sub
+        .where(root -> cb.and(
+            cb.equal(root.get("customer").get("id"), customerId),
+            cb.greaterThan(root.get("amount"), 1000)
+        )))
     .toSpecification()
 ```

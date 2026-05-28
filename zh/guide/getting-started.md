@@ -14,14 +14,14 @@
 <dependency>
     <groupId>io.github.zsubera</groupId>
     <artifactId>myjpa-plus</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.0.3</version>
 </dependency>
 ```
 
 Gradle 用户：
 
 ```groovy
-implementation 'io.github.zsubera:myjpa-plus:0.1.0-SNAPSHOT'
+implementation 'io.github.zsubera:myjpa-plus:0.0.3'
 ```
 
 ## 快速上手

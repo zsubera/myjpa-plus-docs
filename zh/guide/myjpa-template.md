@@ -28,27 +28,56 @@ List<User> users = template.findAll(User.class,
 List<User> users = template.findAll(User.class, 
     new QuerySpec<User>().eq(User::getStatus, "ACTIVE"),
     EntityGraphHelper.forEntity(User.class).add("department"));
+
+// 使用 EntityGraph 和限制
+List<User> users = template.findAll(User.class, 
+    new QuerySpec<User>().eq(User::getStatus, "ACTIVE"),
+    EntityGraphHelper.forEntity(User.class).add("department"), 100);
 ```
 
-### 查找单个
+### 使用原始 Specification 查找
 
 ```java
-Optional<User> user = template.findOne(User.class,
-    new QuerySpec<User>().eq(User::getEmail, "john@example.com"));
+// 使用原始 Specification
+List<User> users = template.find(User.class,
+    (root, query, cb) -> cb.equal(root.get("status"), "ACTIVE"));
+
+// 带限制
+List<User> users = template.find(User.class,
+    (root, query, cb) -> cb.equal(root.get("status"), "ACTIVE"), 100);
 ```
 
-### 统计
+### 流式结果
+
+对于大型结果集，无内存限制：
 
 ```java
-long count = template.count(User.class,
-    new QuerySpec<User>().eq(User::getStatus, "ACTIVE"));
+// 流式所有结果
+try (Stream<User> stream = template.findAllStream(User.class, 
+    new QuerySpec<User>().eq(User::getStatus, "ACTIVE"))) {
+    stream.forEach(user -> process(user));
+}
+
+// 带 EntityGraph 的流式
+try (Stream<User> stream = template.findAllStream(User.class, 
+    new QuerySpec<User>().eq(User::getStatus, "ACTIVE"),
+    EntityGraphHelper.forEntity(User.class).add("department"))) {
+    stream.forEach(user -> process(user));
+}
 ```
 
-### 判断存在
+### 分页
 
 ```java
-boolean exists = template.exists(User.class,
-    new QuerySpec<User>().eq(User::getEmail, "john@example.com"));
+// 使用 Pageable
+Page<User> page = template.findAll(User.class,
+    new QuerySpec<User>().eq(User::getStatus, "ACTIVE"),
+    PageRequest.of(0, 20, Sort.by("name")));
+
+// 使用原始 Specification
+Page<User> page = template.findPage(User.class,
+    (root, query, cb) -> cb.equal(root.get("status"), "ACTIVE"),
+    PageRequest.of(0, 20));
 ```
 
 ## 更新操作
@@ -58,6 +87,14 @@ int count = template.update(User.class)
     .set(User::setStatus, "INACTIVE")
     .eq(User::getStatus, "PENDING")
     .execute(em);
+
+// 批量更新，带大小限制
+int count = template.executeBatch(
+    template.update(User.class)
+        .set(User::setStatus, "PROCESSED")
+        .eq(User::getStatus, "PENDING"),
+    100
+);
 ```
 
 ## 删除操作
@@ -66,15 +103,13 @@ int count = template.update(User.class)
 int count = template.delete(User.class)
     .eq(User::getStatus, "DELETED")
     .execute(em);
-```
 
-## 分页
-
-```java
-// 使用 Pageable
-Page<User> page = template.findAll(User.class,
-    new QuerySpec<User>().eq(User::getStatus, "ACTIVE"),
-    PageRequest.of(0, 20, Sort.by("name")));
+// 批量删除，带大小限制
+int count = template.executeBatch(
+    template.delete(User.class)
+        .eq(User::getStatus, "EXPIRED"),
+    100
+);
 ```
 
 ## EntityGraph
@@ -88,6 +123,16 @@ EntityGraphHelper<User> graph = EntityGraphHelper.forEntity(User.class)
 // 在查询中使用
 List<User> users = template.findAll(User.class,
     new QuerySpec<User>().eq(User::getStatus, "ACTIVE"), graph);
+```
+
+## 常量
+
+```java
+// findAll/find 的默认最大结果数
+MyJpaTemplate.DEFAULT_MAX_RESULTS  // 10000
+
+// 深度分页警告阈值
+MyJpaTemplate.DEFAULT_DEEP_PAGINATION_OFFSET_THRESHOLD  // 100000
 ```
 
 ## 自定义配置

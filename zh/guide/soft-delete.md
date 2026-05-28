@@ -76,6 +76,16 @@ qs.eq(Product::getCategory, "Electronics");
 List<Product> products = repository.findAll(qs.toSpecification());
 ```
 
+## 工具方法
+
+```java
+// 查找软删除字段名
+String fieldName = SoftDeleteHelper.findSoftDeleteField(Product.class);
+
+// 检查实体实例是否已软删除
+boolean isDeleted = SoftDeleteHelper.isSoftDeleted(Product.class, product);
+```
+
 ## 自动过滤配置
 
 在 `application.yml` 中启用自动软删除过滤：

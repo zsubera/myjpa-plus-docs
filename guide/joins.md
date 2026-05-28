@@ -1,11 +1,11 @@
-# 关联查询
+# Join Queries
 
-MyJpa-Plus 提供流式 API 来构建带类型安全条件的 JOIN 查询。
+MyJpa-Plus provides a fluent API for building type-safe JOIN queries with conditions.
 
-## 基本 JOIN
+## Basic JOIN
 
 ```java
-// INNER JOIN 带条件
+// INNER JOIN with condition
 List<User> users = userRepository.findAll(
     new QuerySpec<User>()
         .join(User::getDepartment, j -> j
@@ -17,7 +17,7 @@ List<User> users = userRepository.findAll(
 ## LEFT JOIN
 
 ```java
-// LEFT JOIN - 包含没有部门的用户
+// LEFT JOIN - includes users without departments
 List<User> users = userRepository.findAll(
     new QuerySpec<User>()
         .leftJoin(User::getDepartment, j -> j
@@ -29,7 +29,7 @@ List<User> users = userRepository.findAll(
 
 ## FETCH JOIN
 
-急切加载关联关系，避免 N+1 查询：
+Eagerly load associations to avoid N+1 queries:
 
 ```java
 // FETCH JOIN
@@ -47,7 +47,7 @@ List<User> users = userRepository.findAll(
 );
 ```
 
-## JOIN 中的多条件
+## Multiple Conditions in JOIN
 
 ```java
 List<User> users = userRepository.findAll(
@@ -59,7 +59,7 @@ List<User> users = userRepository.findAll(
 );
 ```
 
-## JOIN 与 OR 分组
+## JOIN with OR Groups
 
 ```java
 List<User> users = userRepository.findAll(
@@ -72,7 +72,7 @@ List<User> users = userRepository.findAll(
 );
 ```
 
-## 多个 JOIN
+## Multiple JOINs
 
 ```java
 List<Order> orders = orderRepository.findAll(
@@ -85,9 +85,9 @@ List<Order> orders = orderRepository.findAll(
 );
 ```
 
-## 手动 API（旧式）
+## Manual API (Legacy)
 
-如果你更喜欢显式的 begin/end 调用：
+If you prefer explicit begin/end calls:
 
 ```java
 QuerySpec<User> qs = new QuerySpec<>();
@@ -96,15 +96,15 @@ jg.eq(Department::getName, "Engineering");
 jg.endJoin();
 ```
 
-## JOIN 缓存
+## JOIN Caching
 
-MyJpa-Plus 自动按字段路径缓存 JOIN。如果你多次 JOIN 同一个字段，只会生成一个 SQL JOIN：
+MyJpa-Plus automatically caches JOINs by field path. If you JOIN the same field multiple times, only one SQL JOIN is generated:
 
 ```java
-// 两个条件使用同一个 JOIN
+// Two conditions using the same JOIN
 new QuerySpec<User>()
     .join(User::getDepartment, j -> j.eq(Department::getName, "Engineering"))
     .join(User::getDepartment, j -> j.gt(Department::getLevel, 3))
     .toSpecification()
-// 生成：SELECT ... FROM user u INNER JOIN department d ON ... WHERE d.name = ? AND d.level > ?
+// Generates: SELECT ... FROM user u INNER JOIN department d ON ... WHERE d.name = ? AND d.level > ?
 ```

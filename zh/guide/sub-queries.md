@@ -81,3 +81,17 @@ new QuerySpec<Customer>()
         .eq(Order::getStatus, "PAID"))
     .toSpecification()
 ```
+
+## 子查询中的原始谓词
+
+对于复杂的关联条件：
+
+```java
+new QuerySpec<Customer>()
+    .exists(Order.class, sub -> sub
+        .where(root -> cb.and(
+            cb.equal(root.get("customer").get("id"), customerId),
+            cb.greaterThan(root.get("amount"), 1000)
+        )))
+    .toSpecification()
+```
