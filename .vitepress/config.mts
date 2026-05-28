@@ -20,7 +20,7 @@ export default defineConfig({
           { text: 'Guide', link: '/guide/getting-started' },
           { text: 'API', link: '/guide/api' },
           {
-            text: 'v0.1.0',
+            text: 'v0.0.2',
             items: [
               { text: 'Changelog', link: '/changelog' },
               { text: 'Contributing', link: '/contributing' }
@@ -75,7 +75,7 @@ export default defineConfig({
           { text: '指南', link: '/zh/guide/getting-started' },
           { text: 'API', link: '/zh/guide/api' },
           {
-            text: 'v0.1.0',
+            text: 'v0.0.2',
             items: [
               { text: '更新日志', link: '/zh/changelog' },
               { text: '贡献指南', link: '/zh/contributing' }
