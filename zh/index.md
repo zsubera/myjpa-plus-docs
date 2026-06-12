@@ -37,12 +37,11 @@ features:
 ## 快速示例
 
 ```java
-// 简单查询，null 安全
+// 简单查询，null 安全（toSpecification() 是可选的）
 List<User> users = userRepository.findAll(
     new QuerySpec<User>()
         .eq(User::getStatus, "ACTIVE")
         .eq(User::getDeletedAt, null)  // → IS NULL
-        .toSpecification()
 );
 
 // OR 条件组合（Consumer 模式）
@@ -70,7 +69,7 @@ List<Order> orders = orderRepository.findAll(
 <dependency>
     <groupId>io.github.zsubera</groupId>
     <artifactId>myjpa-plus</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 

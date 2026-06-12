@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.0.1] - 2026-05-28
+
+### Added
+- `@IgnoreSoftDelete` annotation to skip auto soft-delete filtering on methods or types
+- `MyJpaTemplate.findById(Class, Object)` for direct entity lookup by ID
+- `MyJpaTemplate.findOne(Class, QuerySpec)` for single entity queries
+- `EntityGraphHelper.nest(String)` for chaining nested attribute paths
+- `@SoftDelete(deletedValue)` attribute for enum-based soft delete
+- `QuerySpec.having(Function<Path, Predicate>)` convenience overload
+- `ConditionBuilder.where(Function<Root, Predicate>)` overload
+- System property `myjpa-plus.in-clause-max-size` for configuring IN clause batch size
+- System property `myjpa-plus.lambda-cache-size` for configuring LambdaUtils cache size
+
+### Fixed
+- `rawLike` description corrected: auto-escapes wildcards and wraps with `%...%`
+
 ## [1.0.0] - 2026-05-28
 
 ### Breaking Changes
@@ -42,7 +58,7 @@
 - `AbstractBulkOperationSpec.executeInTransaction()` now catches `Exception` (not just `RuntimeException`)
 
 ### Changed
-- Eliminated three-layer duplication of condition methods: created `PredicateHelper` shared utility, `SubQuerySpec` and `AbstractBulkOperationSpec` delegate to `PredicateHelper` for predicate construction
+- Eliminated three-layer duplication of condition methods: created `PredicateHelper` shared utility
 - `ConditionNode` → sealed interface; all implementations are `final`
 - SpotBugs threshold set to Medium
 - JaCoCo minimum coverage 60% (excluding autoconfigure)

@@ -12,41 +12,46 @@ Core class for building type-safe queries. Implements `Specification<T>`.
 
 | Method | Description | Example |
 |--------|-------------|---------|
-| `eq(field, value)` | Equals | `.eq(User::getStatus, "ACTIVE")` |
-| `ne(field, value)` | Not equals | `.ne(User::getStatus, "DELETED")` |
+| `eq(field, value)` | Equals; null value → IS NULL | `.eq(User::getStatus, "ACTIVE")` |
+| `ne(field, value)` | Not equals; null value → IS NOT NULL | `.ne(User::getStatus, "DELETED")` |
 | `gt(field, value)` | Greater than | `.gt(User::getAge, 18)` |
 | `ge(field, value)` | Greater than or equal | `.ge(User::getAge, 18)` |
 | `lt(field, value)` | Less than | `.lt(User::getAge, 65)` |
 | `le(field, value)` | Less than or equal | `.le(User::getAge, 65)` |
 | `between(field, start, end)` | Between (inclusive) | `.between(User::getAge, 18, 65)` |
 | `notBetween(field, start, end)` | Not between | `.notBetween(User::getAge, 0, 17)` |
-| `like(field, pattern)` | LIKE | `.like(User::getName, "%John%")` |
+| `like(field, pattern)` | LIKE (caller provides wildcards) | `.like(User::getName, "%John%")` |
 | `notLike(field, pattern)` | NOT LIKE | `.notLike(User::getName, "%test%")` |
-| `startsWith(field, value)` | Starts with | `.startsWith(User::getName, "John")` |
-| `endsWith(field, value)` | Ends with | `.endsWith(User::getName, "son")` |
-| `contains(field, value)` | Contains | `.contains(User::getName, "oh")` |
-| `eqIgnoreCase(field, value)` | Case-insensitive equals | `.eqIgnoreCase(User::getName, "john")` |
-| `likeIgnoreCase(field, pattern)` | Case-insensitive LIKE | `.likeIgnoreCase(User::getName, "%john%")` |
-| `rawLike(field, pattern)` | Raw LIKE (no escaping) | `.rawLike(User::getCode, "USER%")` |
+| `startsWith(field, value)` | LIKE `value%` with auto-escape | `.startsWith(User::getName, "John")` |
+| `endsWith(field, value)` | LIKE `%value` with auto-escape | `.endsWith(User::getName, "son")` |
+| `contains(field, value)` | LIKE `%value%` with auto-escape | `.contains(User::getName, "oh")` |
+| `rawLike(field, pattern)` | LIKE `%pattern%` with auto-escape and wrap | `.rawLike(User::getName, "oh")` |
+| `eqIgnoreCase(field, value)` | UPPER equals; null → IS NULL | `.eqIgnoreCase(User::getName, "john")` |
+| `likeIgnoreCase(field, pattern)` | UPPER LIKE | `.likeIgnoreCase(User::getName, "%john%")` |
 | `in(field, values...)` | IN | `.in(User::getStatus, "A", "B")` |
 | `in(field, collection)` | IN (Collection) | `.in(User::getStatus, List.of("A", "B"))` |
 | `notIn(field, values...)` | NOT IN | `.notIn(User::getStatus, "C", "D")` |
 | `notIn(field, collection)` | NOT IN (Collection) | `.notIn(User::getStatus, List.of("C", "D"))` |
 | `isNull(field)` | IS NULL | `.isNull(User::getDeletedAt)` |
 | `isNotNull(field)` | IS NOT NULL | `.isNotNull(User::getEmail)` |
-| `isEmpty(field)` | IS EMPTY | `.isEmpty(User::getRoles)` |
-| `isNotEmpty(field)` | IS NOT EMPTY | `.isNotEmpty(User::getRoles)` |
-| `multiLike(keyword, fields...)` | Multi-field LIKE | `.multiLike("test", User::getName, User::getEmail)` |
-| `where(predicate)` | Raw predicate | `.where((path, cb) -> ...)` |
+| `isEmpty(field)` | IS EMPTY (collection) | `.isEmpty(User::getRoles)` |
+| `isNotEmpty(field)` | IS NOT EMPTY (collection) | `.isNotEmpty(User::getRoles)` |
+| `multiLike(keyword, fields...)` | Multi-field OR LIKE | `.multiLike("test", User::getName, User::getEmail)` |
+| `where(BiFunction)` | Raw predicate `(Path, CB) → Predicate` | `.where((path, cb) -> ...)` |
+| `where(Function)` | Raw predicate `(Root) → Predicate` | `.where(root -> ...)` |
 
 ### Conditional (Guarded) Methods
 
-All condition methods have a `boolean condition` first-parameter variant:
+All condition methods have a `boolean condition` first-parameter variant. Only adds the condition when `true`:
 
 ```java
 .eq(condition, field, value)
 .ne(condition, field, value)
 .gt(condition, field, value)
+.like(condition, field, pattern)
+.in(condition, field, collection)
+.between(condition, field, start, end)
+.multiLike(condition, keyword, fields...)
 // ... etc
 ```
 
@@ -54,17 +59,19 @@ All condition methods have a `boolean condition` first-parameter variant:
 
 | Method | Description |
 |--------|-------------|
-| `or(config)` | OR group (Consumer pattern) |
-| `not(config)` | NOT group (Consumer pattern) |
-| `join(field, config)` | INNER JOIN (Consumer pattern) |
-| `leftJoin(field, config)` | LEFT JOIN (Consumer pattern) |
-| `fetchJoin(field, config)` | FETCH JOIN (Consumer pattern) |
-| `leftFetchJoin(field, config)` | LEFT FETCH JOIN (Consumer pattern) |
-| `or()` | Open OR group (manual close) |
-| `join(field)` | Open JOIN (manual close) |
-| `leftJoin(field)` | Open LEFT JOIN (manual close) |
-| `fetchJoin(field)` | Open FETCH JOIN (manual close) |
-| `leftFetchJoin(field)` | Open LEFT FETCH JOIN (manual close) |
+| `or(config)` | OR group (Consumer pattern, auto-close) |
+| `not(config)` | NOT group (Consumer pattern, auto-close) |
+| `join(field, config)` | INNER JOIN (Consumer pattern, auto-close) |
+| `leftJoin(field, config)` | LEFT JOIN (Consumer pattern, auto-close) |
+| `fetchJoin(field, config)` | FETCH JOIN (Consumer pattern, auto-close) |
+| `leftFetchJoin(field, config)` | LEFT FETCH JOIN (Consumer pattern, auto-close) |
+| `or()` | Open OR group (manual close with `endOr()`) |
+| `join(field)` | Open JOIN (manual close with `endJoin()`) |
+| `leftJoin(field)` | Open LEFT JOIN |
+| `fetchJoin(field)` | Open FETCH JOIN |
+| `leftFetchJoin(field)` | Open LEFT FETCH JOIN |
+| `exists(class, config)` | EXISTS subquery |
+| `notExists(class, config)` | NOT EXISTS subquery |
 
 ### Query Settings
 
@@ -72,12 +79,12 @@ All condition methods have a `boolean condition` first-parameter variant:
 |--------|-------------|
 | `distinct()` | Enable DISTINCT |
 | `groupBy(fields...)` | GROUP BY clause |
-| `having(condition)` | HAVING clause |
+| `having(BiFunction)` | HAVING clause `(Path, CB) → Predicate` |
+| `having(Function)` | HAVING clause `(Path) → Predicate` |
 | `orderByAsc(fields...)` | Order ascending |
 | `orderByDesc(fields...)` | Order descending |
 | `timeout(seconds)` | Query timeout |
-| `lockMode(mode)` | Lock mode |
-| `where(predicate)` | Raw predicate |
+| `lockMode(mode)` | Pessimistic lock mode |
 
 ### Conversion Methods
 
@@ -85,17 +92,17 @@ All condition methods have a `boolean condition` first-parameter variant:
 |--------|-------------|
 | `toSpecification()` | Convert to Specification |
 | `toSpecification(external)` | AND-combine with external Specification |
-| `and(other)` | AND-combine with another QuerySpec |
-| `or(other)` | OR-combine with another QuerySpec |
-| `then(other)` | Merge another QuerySpec's conditions |
-| `getSort()` | Get Sort for Spring Data |
-| `getQueryTimeout()` | Get timeout setting |
-| `getLockMode()` | Get lock mode |
+| `and(other)` | AND-combine with another QuerySpec → Specification |
+| `or(other)` | OR-combine with another QuerySpec → Specification |
+| `then(other)` | Merge another QuerySpec's conditions into this |
+| `getSort()` | Expose ordering as Spring Data Sort |
+| `getQueryTimeout()` | Get timeout (null if unset) |
+| `getLockMode()` | Get lock mode (null if unset) |
 | `applyQuerySettings(query)` | Apply timeout/lock to TypedQuery |
 
 ## JoinGroup\<T, J\>
 
-Builder for JOIN conditions. Extends `ConditionBuilder<J>`.
+Builder for JOIN conditions. Extends `ConditionBuilder<J>` with all condition methods.
 
 | Method | Description |
 |--------|-------------|
@@ -109,7 +116,7 @@ Builder for JOIN conditions. Extends `ConditionBuilder<J>`.
 
 ## OrGroup\<T\>
 
-Builder for OR conditions. Extends `ConditionBuilder<T>`.
+Builder for OR conditions. Extends `ConditionBuilder<T>` with all condition methods.
 
 | Method | Description |
 |--------|-------------|
@@ -123,52 +130,65 @@ Builder for OR conditions. Extends `ConditionBuilder<T>`.
 
 ## SubQuerySpec\<S\>
 
-EXISTS/NOT EXISTS subquery builder.
+EXISTS/NOT EXISTS subquery builder with immediate predicate evaluation.
+
+### Condition Methods
+
+| Method | Description |
+|--------|-------------|
+| `eq`, `ne`, `gt`, `ge`, `lt`, `le` | Comparison operators |
+| `like`, `notLike`, `startsWith`, `endsWith`, `contains` | String operators |
+| `eqIgnoreCase`, `likeIgnoreCase` | Case-insensitive string operators |
+| `in`, `notIn` (varargs and Collection) | Collection operators |
+| `between`, `notBetween` | Range operators |
+| `isNull`, `isNotNull` | Null checks |
+| `isEmpty`, `isNotEmpty` | Collection emptiness |
+| `multiLike(keyword, fields...)` | Multi-field LIKE |
+
+### Special Methods
 
 | Method | Description |
 |--------|-------------|
 | `correlated()` | Get correlated outer Root |
 | `correlatedEq(outer, inner)` | Typed correlation predicate |
 | `select(field)` | Custom SELECT clause |
-| `where(predicate)` | Raw predicate |
-
-All QuerySpec condition methods are also available.
+| `where(Function)` | Raw predicate `(Root) → Predicate` |
 
 ## UpdateSpec\<T\>
 
-Bulk UPDATE operation builder.
+Bulk UPDATE operation builder. Extends `AbstractBulkOperationSpec`.
 
 | Method | Description |
 |--------|-------------|
 | `set(field, value)` | SET clause |
 | `set(condition, field, value)` | Conditional SET |
-| `execute(em)` | Execute in existing transaction |
+| `execute(em)` | Execute in existing transaction (requires WHERE) |
 | `executeInTransaction(em)` | Execute with transaction management |
-| `executeLimited(em, limit)` | Execute with row limit |
+| `executeLimited(em, limit)` | Execute with row limit (batched via ID subquery) |
 | `updateAll(em)` | Unconditional update |
 | `updateAllInTransaction(em)` | Unconditional update with transaction |
 | `toUpdate(em)` | Build CriteriaUpdate without executing |
 
-All condition methods from `ConditionBuilder` are available (eq, ne, gt, etc.).
+All condition methods are available: `eq`, `ne`, `gt`, `ge`, `lt`, `le`, `like`, `notLike`, `startsWith`, `endsWith`, `contains`, `eqIgnoreCase`, `likeIgnoreCase`, `in`, `notIn`, `between`, `notBetween`, `isNull`, `isNotNull`, `where`, `or`, `not`.
 
 ## DeleteSpec\<T\>
 
-Bulk DELETE operation builder.
+Bulk DELETE operation builder. Extends `AbstractBulkOperationSpec`.
 
 | Method | Description |
 |--------|-------------|
-| `execute(em)` | Execute in existing transaction |
+| `execute(em)` | Execute in existing transaction (requires WHERE) |
 | `executeInTransaction(em)` | Execute with transaction management |
-| `executeLimited(em, limit)` | Execute with row limit |
+| `executeLimited(em, limit)` | Execute with row limit (batched via ID subquery) |
 | `deleteAll(em)` | Unconditional delete |
 | `deleteAllInTransaction(em)` | Unconditional delete with transaction |
 | `toDelete(em)` | Build CriteriaDelete without executing |
 
-All condition methods from `ConditionBuilder` are available (eq, ne, gt, etc.).
+All condition methods are available (same as UpdateSpec).
 
 ## ProjectionSpec\<T\>
 
-DTO projection query builder.
+DTO projection query builder supporting Tuple and constructor-based DTO projection.
 
 | Method | Description |
 |--------|-------------|
@@ -178,38 +198,60 @@ DTO projection query builder.
 | `leftJoin(field, config)` | LEFT JOIN with conditions |
 | `orderByAsc(field)` | Order ascending |
 | `orderByDesc(field)` | Order descending |
-| `where(config)` | Add WHERE conditions |
-| `conditions()` | Access underlying QuerySpec |
+| `where(config)` | Add WHERE conditions via `Consumer<QuerySpec<T>>` |
+| `conditions()` | Access underlying QuerySpec directly |
 | `toTupleQuery(em)` | Build Tuple query |
-| `toDtoQuery(em)` | Build DTO constructor query |
+| `toDtoQuery(em)` | Build DTO constructor query (requires `asDto()`) |
 | `findPage(em, pageable)` | Paginated Tuple query |
+
+### ProjectionSpec.JoinGroup\<E\>
+
+Inner JOIN condition builder for projections. Supports: `eq`, `ne`, `like`, `gt`, `lt`, `isNull`, `isNotNull`.
 
 ## MyJpaTemplate
 
-Convenience template for common operations.
+Convenience template for common operations. Auto-configured Spring bean.
+
+### Query Methods
 
 | Method | Description |
 |--------|-------------|
-| `findAll(class, spec)` | Find all |
-| `findAll(class, spec, maxResults)` | Find with limit |
+| `findById(class, id)` | Find entity by ID |
+| `findOne(class, QuerySpec)` | Find single entity |
+| `findAll(class, spec)` | Find all (limited by `maxResults`) |
+| `findAll(class, spec, maxResults)` | Find with custom limit |
 | `findAll(class, spec, entityGraph)` | Find with EntityGraph |
 | `findAll(class, spec, entityGraph, maxResults)` | Find with EntityGraph and limit |
 | `findAll(class, spec, pageable)` | Paginated query |
-| `findAllStream(class, spec)` | Streaming results |
+| `findAllStream(class, spec)` | Streaming results (no memory limit) |
 | `findAllStream(class, spec, entityGraph)` | Streaming with EntityGraph |
 | `find(class, Specification)` | Find with raw Specification |
 | `find(class, Specification, maxResults)` | Find with raw Specification and limit |
 | `findPage(class, Specification, pageable)` | Paginated with raw Specification |
+
+### Mutation Methods
+
+| Method | Description |
+|--------|-------------|
 | `update(class)` | Create UpdateSpec |
 | `delete(class)` | Create DeleteSpec |
 | `execute(UpdateSpec)` | Execute update in transaction |
 | `execute(DeleteSpec)` | Execute delete in transaction |
-| `executeBatch(UpdateSpec, batchSize)` | Batch update |
-| `executeBatch(DeleteSpec, batchSize)` | Batch delete |
+| `executeBatch(UpdateSpec, batchSize)` | Batch update with flush/clear |
+| `executeBatch(DeleteSpec, batchSize)` | Batch delete with flush/clear |
+
+### Constants
+
+| Constant | Default | Description |
+|----------|---------|-------------|
+| `DEFAULT_MAX_RESULTS` | `10000` | Default max rows for findAll/find |
+| `DEFAULT_DEEP_PAGINATION_OFFSET_THRESHOLD` | `100000` | Offset threshold for deep pagination warning |
 
 ## MyJpaRepository\<T, ID\>
 
 Base repository interface. Extends `JpaRepository<T, ID>` and `JpaSpecificationExecutor<T>`.
+
+### Soft Delete Methods
 
 | Method | Description |
 |--------|-------------|
@@ -223,30 +265,49 @@ Base repository interface. Extends `JpaRepository<T, ID>` and `JpaSpecificationE
 
 ## EntityGraphHelper\<T\>
 
-JPA EntityGraph builder helper.
+JPA EntityGraph builder helper for eager loading strategies.
 
 | Method | Description |
 |--------|-------------|
 | `forEntity(class)` | Create new instance |
-| `add(path)` | Add attribute path (supports dot notation) |
+| `add(path)` | Add attribute path (supports dot notation, e.g. `"roles.permissions"`) |
 | `add(paths...)` | Add multiple paths |
+| `nest(attribute)` | Chain nested path from last added path |
 | `loadGraph()` | Set LOAD graph mode |
 | `fetchGraph()` | Set FETCH graph mode (default) |
-| `buildGraph(em)` | Build EntityGraph |
-| `toHints(em)` | Convert to query hints |
+| `buildGraph(em)` | Build JPA EntityGraph |
+| `toHints(em)` | Convert to query hints Map |
 | `apply(query, em)` | Apply to TypedQuery |
 
 ## SoftDeleteHelper
 
-Soft delete utility class.
+Soft delete utility class with cached Specifications.
 
 | Method | Description |
 |--------|-------------|
-| `isNotDeleted(class)` | Specification for non-deleted entities |
-| `isDeleted(class)` | Specification for deleted entities |
-| `notDeletedQuery(class)` | QuerySpec with soft delete filter |
-| `findSoftDeleteField(class)` | Find @SoftDelete field name |
-| `isSoftDeleted(class, entity)` | Check if entity is soft-deleted |
+| `isNotDeleted(class)` | Specification for non-deleted entities (cached) |
+| `isDeleted(class)` | Specification for deleted entities (cached) |
+| `notDeletedQuery(class)` | New QuerySpec with soft delete filter |
+| `findSoftDeleteField(class)` | Find `@SoftDelete` field name (cached) |
+| `isSoftDeleted(class, entity)` | Check if entity instance is soft-deleted |
+
+## @SoftDelete
+
+Annotation to mark a field as the soft delete flag. Works with `boolean`, `Boolean`, and `Enum` types.
+
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `deletedValue` | `String` | `""` | Enum constant name for "deleted" state |
+
+- **boolean/Boolean**: `true` = deleted, `false`/`null` = not deleted
+- **Enum**: value matching `deletedValue` = deleted, others = not deleted
+
+## @IgnoreSoftDelete
+
+Annotation to skip automatic soft-delete filtering on a method or type.
+
+- **Target**: `METHOD`, `TYPE`
+- **Retention**: `RUNTIME`
 
 ## PageableHelper
 
@@ -254,13 +315,13 @@ Pagination utility class.
 
 | Method | Description |
 |--------|-------------|
-| `unsorted(page, size)` | PageRequest without sort |
-| `merge(pageable, spec)` | Merge Pageable sort with QuerySpec sort |
+| `unsorted(page, size)` | PageRequest without sort (preserves QuerySpec ordering) |
+| `merge(pageable, spec)` | Merge Pageable sort with QuerySpec sort (QuerySpec first) |
 | `sorted(page, size, sort)` | PageRequest with explicit sort |
 
 ## LambdaUtils
 
-Lambda utility class.
+Lambda utility class. LRU cache (default 4096, configurable via `-Dmyjpa-plus.lambda-cache-size`).
 
 | Method | Description |
 |--------|-------------|
@@ -268,7 +329,7 @@ Lambda utility class.
 
 ## InClauseBuilder
 
-IN clause batching utility (Oracle-compatible, max 1000 per batch).
+IN clause batching utility. Auto-splits large IN clauses for Oracle compatibility (max 1000 per batch, configurable via `-Dmyjpa-plus.in-clause-max-size`).
 
 | Method | Description |
 |--------|-------------|
@@ -279,21 +340,14 @@ IN clause batching utility (Oracle-compatible, max 1000 per batch).
 
 ## BaseEntity
 
-`@MappedSuperclass` providing common audit fields.
+`@MappedSuperclass` providing common audit fields with JPA lifecycle callbacks.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `id` | `Long` | Auto-generated ID |
-| `createdAt` | `Instant` | Creation timestamp (auto-set) |
-| `updatedAt` | `Instant` | Update timestamp (auto-set) |
-
-## @SoftDelete
-
-Annotation to mark a boolean field as the soft delete flag.
-
-- `true` = deleted
-- `false` / `null` = not deleted
+| `id` | `Long` | Auto-generated ID (`@GeneratedValue(IDENTITY)`) |
+| `createdAt` | `Instant` | Creation timestamp (auto-set on persist) |
+| `updatedAt` | `Instant` | Update timestamp (auto-set on persist/update) |
 
 ## MyJpaPlusException
 
-Base runtime exception for MyJpa-Plus.
+Base runtime exception for MyJpa-Plus. Constructors: `(String message)`, `(String message, Throwable cause)`.

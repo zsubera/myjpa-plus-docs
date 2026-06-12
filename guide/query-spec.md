@@ -2,6 +2,25 @@
 
 QuerySpec is the core class for building type-safe queries. It implements `Specification<T>` and provides a fluent API for constructing JPA Criteria predicates.
 
+## About toSpecification()
+
+`QuerySpec` directly implements `Specification<T>`, so you can pass it directly to `findAll()` without calling `toSpecification()`:
+
+```java
+// Both work:
+userRepository.findAll(new QuerySpec<User>().eq(User::getStatus, "ACTIVE"));
+userRepository.findAll(new QuerySpec<User>().eq(User::getStatus, "ACTIVE").toSpecification());
+```
+
+**When to use `toSpecification()`:**
+- Combining with external Specification: `toSpecification(externalSpec)`
+- Making code intent clearer in complex queries
+- Validating state (catches unclosed `or()` groups)
+
+**When you can skip it:**
+- Simple queries where intent is already clear
+- Chained calls where the builder pattern is obvious
+
 ## Basic Comparisons
 
 ### Equality

@@ -14,14 +14,14 @@ Add the dependency to your `pom.xml`:
 <dependency>
     <groupId>io.github.zsubera</groupId>
     <artifactId>myjpa-plus</artifactId>
-    <version>1.0.0</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 
 Or for Gradle:
 
 ```groovy
-implementation 'io.github.zsubera:myjpa-plus:1.0.0'
+implementation 'io.github.zsubera:myjpa-plus:1.2.0'
 ```
 
 ## Quick Start
@@ -36,6 +36,7 @@ public class User {
     private Long id;
     
     private String name;
+    private String email;
     private String status;
     private Integer age;
     
@@ -63,6 +64,7 @@ public class UserService {
     private UserRepository userRepository;
     
     public List<User> findActiveUsers() {
+        // toSpecification() is optional - QuerySpec implements Specification directly
         return userRepository.findAll(
             new QuerySpec<User>()
                 .eq(User::getStatus, "ACTIVE")
@@ -84,4 +86,13 @@ public class UserService {
 
 - [QuerySpec Guide](./query-spec) - Learn all query operations
 - [Join Queries](./joins) - Query with associations
-- [Bulk Operations](./bulk-operations) - Update and delete operations
+- [Sub Queries](./sub-queries) - EXISTS and NOT EXISTS queries
+- [Update & Delete](./bulk-operations) - Bulk update and delete operations
+- [UPSERT / MergeSpec](./upsert) - INSERT ... ON CONFLICT UPDATE
+- [CTE](./cte) - Common Table Expressions
+- [Soft Delete](./soft-delete) - Soft delete with @SoftDelete
+- [Encryption](./encryption) - Field-level encryption with @Encrypt
+- [Audit](./audit) - Audit annotations for created/updated fields
+- [MyJpaTemplate](./myjpa-template) - Query template with caching
+- [Projection](./projection) - Projection queries
+- [Code Generation](./code-generation) - Generate entity and repository code

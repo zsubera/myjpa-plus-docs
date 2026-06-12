@@ -13,6 +13,19 @@ private MyJpaTemplate template;
 
 ## 查询操作
 
+### 根据 ID 查找
+
+```java
+Optional<User> user = template.findById(User.class, userId);
+```
+
+### 查找单个
+
+```java
+Optional<User> user = template.findOne(User.class,
+    new QuerySpec<User>().eq(User::getEmail, "john@example.com"));
+```
+
 ### 查找所有
 
 ```java
@@ -69,7 +82,7 @@ try (Stream<User> stream = template.findAllStream(User.class,
 ### 分页
 
 ```java
-// 使用 Pageable
+// 使用 Pageable 和 QuerySpec
 Page<User> page = template.findAll(User.class,
     new QuerySpec<User>().eq(User::getStatus, "ACTIVE"),
     PageRequest.of(0, 20, Sort.by("name")));
@@ -119,6 +132,11 @@ int count = template.executeBatch(
 EntityGraphHelper<User> graph = EntityGraphHelper.forEntity(User.class)
     .add("department")
     .add("roles.permissions");
+
+// 链接嵌套路径
+EntityGraphHelper<User> graph = EntityGraphHelper.forEntity(User.class)
+    .add("department")
+    .nest("company");  // 等同于 add("department.company")
 
 // 在查询中使用
 List<User> users = template.findAll(User.class,

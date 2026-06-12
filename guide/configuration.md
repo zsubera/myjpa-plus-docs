@@ -19,6 +19,15 @@ Prefix: `myjpa-plus`
 | `myjpa-plus.query.max-results` | int | `10000` | Maximum rows returned by findAll/find methods |
 | `myjpa-plus.query.deep-pagination-offset-threshold` | int | `100000` | Offset threshold for deep pagination warnings |
 
+## System Properties
+
+These are configured via JVM `-D` flags:
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `myjpa-plus.lambda-cache-size` | int | `4096` | LRU cache size for `LambdaUtils` property name extraction |
+| `myjpa-plus.in-clause-max-size` | int | `1000` | Max values per IN clause batch (Oracle-compatible) |
+
 ## application.yml Example
 
 ```yaml
@@ -36,6 +45,14 @@ myjpa-plus:
 myjpa-plus.soft-delete.auto-filter=true
 myjpa-plus.query.max-results=10000
 myjpa-plus.query.deep-pagination-offset-threshold=100000
+```
+
+## JVM Flags Example
+
+```bash
+java -Dmyjpa-plus.lambda-cache-size=8192 \
+     -Dmyjpa-plus.in-clause-max-size=500 \
+     -jar app.jar
 ```
 
 ## Auto-Configuration

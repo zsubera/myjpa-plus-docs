@@ -1,5 +1,21 @@
 # 更新日志
 
+## [1.0.1] - 2026-05-28
+
+### 新增
+- `@IgnoreSoftDelete` 注解，用于跳过方法或类型的自动软删除过滤
+- `MyJpaTemplate.findById(Class, Object)` 直接根据 ID 查找实体
+- `MyJpaTemplate.findOne(Class, QuerySpec)` 查找单个实体
+- `EntityGraphHelper.nest(String)` 链接嵌套属性路径
+- `@SoftDelete(deletedValue)` 属性，支持基于 Enum 的软删除
+- `QuerySpec.having(Function<Path, Predicate>)` 便利重载
+- `ConditionBuilder.where(Function<Root, Predicate>)` 重载
+- 系统属性 `myjpa-plus.in-clause-max-size` 配置 IN 子句批处理大小
+- 系统属性 `myjpa-plus.lambda-cache-size` 配置 LambdaUtils 缓存大小
+
+### 修复
+- `rawLike` 描述修正：自动转义通配符并包裹 `%...%`
+
 ## [1.0.0] - 2026-05-28
 
 ### 破坏性变更

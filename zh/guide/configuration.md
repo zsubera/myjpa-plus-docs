@@ -19,6 +19,15 @@ MyJpa-Plus 通过 Spring Boot 的 `application.yml` 或 `application.properties`
 | `myjpa-plus.query.max-results` | int | `10000` | findAll/find 方法返回的最大行数 |
 | `myjpa-plus.query.deep-pagination-offset-threshold` | int | `100000` | 深度分页警告的 offset 阈值 |
 
+## 系统属性
+
+通过 JVM `-D` 参数配置：
+
+| 属性 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `myjpa-plus.lambda-cache-size` | int | `4096` | `LambdaUtils` 属性名提取的 LRU 缓存大小 |
+| `myjpa-plus.in-clause-max-size` | int | `1000` | 每批 IN 子句的最大值数量（Oracle 兼容） |
+
 ## application.yml 示例
 
 ```yaml
@@ -36,6 +45,14 @@ myjpa-plus:
 myjpa-plus.soft-delete.auto-filter=true
 myjpa-plus.query.max-results=10000
 myjpa-plus.query.deep-pagination-offset-threshold=100000
+```
+
+## JVM 参数示例
+
+```bash
+java -Dmyjpa-plus.lambda-cache-size=8192 \
+     -Dmyjpa-plus.in-clause-max-size=500 \
+     -jar app.jar
 ```
 
 ## 自动配置

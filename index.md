@@ -37,12 +37,11 @@ features:
 ## Quick Example
 
 ```java
-// Simple query with null safety
+// Simple query with null safety (toSpecification() is optional)
 List<User> users = userRepository.findAll(
     new QuerySpec<User>()
         .eq(User::getStatus, "ACTIVE")
         .eq(User::getDeletedAt, null)  // → IS NULL
-        .toSpecification()
 );
 
 // OR conditions with Consumer pattern
@@ -70,7 +69,7 @@ List<Order> orders = orderRepository.findAll(
 <dependency>
     <groupId>io.github.zsubera</groupId>
     <artifactId>myjpa-plus</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.2.0</version>
 </dependency>
 ```
 

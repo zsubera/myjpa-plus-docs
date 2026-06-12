@@ -2,6 +2,25 @@
 
 QuerySpec 是构建类型安全查询的核心类。它实现了 `Specification<T>` 接口，提供流式 API 来构建 JPA Criteria 谓词。
 
+## 关于 toSpecification()
+
+`QuerySpec` 直接实现了 `Specification<T>` 接口，所以你可以直接将它传递给 `findAll()`，无需调用 `toSpecification()`：
+
+```java
+// 两种写法都可以：
+userRepository.findAll(new QuerySpec<User>().eq(User::getStatus, "ACTIVE"));
+userRepository.findAll(new QuerySpec<User>().eq(User::getStatus, "ACTIVE").toSpecification());
+```
+
+**需要调用 `toSpecification()` 的场景：**
+- 与外部 Specification 组合：`toSpecification(externalSpec)`
+- 在复杂查询中使代码意图更清晰
+- 验证状态（捕获未关闭的 `or()` 组）
+
+**可以跳过的场景：**
+- 简单查询，意图已经很清晰
+- 链式调用，构建器模式已经很明显
+
 ## 基本比较
 
 ### 等值比较

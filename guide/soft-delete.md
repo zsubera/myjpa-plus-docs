@@ -4,6 +4,8 @@ MyJpa-Plus provides built-in soft delete support using the `@SoftDelete` annotat
 
 ## Define Soft Delete Entity
 
+### Boolean-based (most common)
+
 ```java
 @Entity
 public class Product {
@@ -19,6 +21,40 @@ public class Product {
     // getters and setters...
 }
 ```
+
+### Enum-based
+
+```java
+public enum Status {
+    ACTIVE, INACTIVE, DELETED
+}
+
+@Entity
+public class Order {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    
+    @SoftDelete(deletedValue = "DELETED")
+    private Status status = Status.ACTIVE;
+}
+```
+
+### Boolean vs Nullable Boolean
+
+```java
+// Primitive boolean - WHERE deleted = false
+@SoftDelete
+private boolean deleted;
+
+// Wrapper Boolean - WHERE deleted IS NULL OR deleted = false
+@SoftDelete
+private Boolean deleted;
+```
+
+Nullable `Boolean` allows three states:
+- `null` or `false` = not deleted
+- `true` = deleted
 
 ## Using MyJpaRepository
 
@@ -53,11 +89,11 @@ long count = repository.countNotDeleted(spec);
 For more control, use `SoftDeleteHelper` directly:
 
 ```java
-// Get Specification for non-deleted entities
+// Get Specification for non-deleted entities (cached)
 Specification<Product> notDeleted = SoftDeleteHelper.isNotDeleted(Product.class);
 List<Product> products = repository.findAll(notDeleted);
 
-// Get only deleted entities
+// Get only deleted entities (cached)
 Specification<Product> deleted = SoftDeleteHelper.isDeleted(Product.class);
 List<Product> archived = repository.findAll(deleted);
 
@@ -79,7 +115,7 @@ List<Product> products = repository.findAll(qs.toSpecification());
 ## Utility Methods
 
 ```java
-// Find the soft delete field name
+// Find the soft delete field name (cached, returns null if none)
 String fieldName = SoftDeleteHelper.findSoftDeleteField(Product.class);
 
 // Check if an entity instance is soft-deleted
@@ -94,6 +130,23 @@ Enable automatic soft delete filtering in `application.yml`:
 myjpa-plus:
   soft-delete:
     auto-filter: true  # Default: true
+```
+
+## @IgnoreSoftDelete
+
+Use `@IgnoreSoftDelete` to skip auto-filtering on specific methods or entire types:
+
+```java
+// Skip on a specific repository method
+@IgnoreSoftDelete
+@Query("SELECT p FROM Product p WHERE p.id = :id")
+Optional<Product> findByIdIncludingDeleted(@Param("id") Long id);
+
+// Skip on an entire repository
+@IgnoreSoftDelete
+public interface ArchiveRepository extends MyJpaRepository<Product, Long> {
+    // All queries in this repository include soft-deleted entities
+}
 ```
 
 ## SoftDeleteFilterBean
@@ -111,24 +164,6 @@ Specification<Product> filtered = filterBean.apply(spec, Product.class);
 // Check if entity has soft delete field
 boolean hasSoftDelete = filterBean.hasSoftDeleteField(Product.class);
 
-// Register entity for caching
+// Pre-register entity for caching
 filterBean.registerEntity(Product.class);
 ```
-
-## Boolean vs Nullable Boolean
-
-MyJpa-Plus handles both `boolean` and `Boolean` types:
-
-```java
-// Primitive boolean - WHERE deleted = false
-@SoftDelete
-private boolean deleted;
-
-// Wrapper Boolean - WHERE deleted IS NULL OR deleted = false
-@SoftDelete
-private Boolean deleted;
-```
-
-The nullable `Boolean` type allows three states:
-- `null` or `false` = not deleted
-- `true` = deleted

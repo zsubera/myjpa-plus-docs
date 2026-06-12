@@ -13,6 +13,19 @@ private MyJpaTemplate template;
 
 ## Query Operations
 
+### Find by ID
+
+```java
+Optional<User> user = template.findById(User.class, userId);
+```
+
+### Find One
+
+```java
+Optional<User> user = template.findOne(User.class,
+    new QuerySpec<User>().eq(User::getEmail, "john@example.com"));
+```
+
 ### Find All
 
 ```java
@@ -69,7 +82,7 @@ try (Stream<User> stream = template.findAllStream(User.class,
 ### Pagination
 
 ```java
-// Using Pageable
+// Using Pageable with QuerySpec
 Page<User> page = template.findAll(User.class,
     new QuerySpec<User>().eq(User::getStatus, "ACTIVE"),
     PageRequest.of(0, 20, Sort.by("name")));
@@ -119,6 +132,11 @@ int count = template.executeBatch(
 EntityGraphHelper<User> graph = EntityGraphHelper.forEntity(User.class)
     .add("department")
     .add("roles.permissions");
+
+// Chain nested paths
+EntityGraphHelper<User> graph = EntityGraphHelper.forEntity(User.class)
+    .add("department")
+    .nest("company");  // equivalent to add("department.company")
 
 // Use in query
 List<User> users = template.findAll(User.class,

@@ -20,7 +20,7 @@ export default defineConfig({
           { text: 'Guide', link: '/guide/getting-started' },
           { text: 'API', link: '/guide/api' },
           {
-            text: 'v1.0.0',
+            text: 'v1.2.0',
             items: [
               { text: 'Changelog', link: '/changelog' },
               { text: 'Contributing', link: '/contributing' }
@@ -43,9 +43,14 @@ export default defineConfig({
                 { text: 'Join Queries', link: '/guide/joins' },
                 { text: 'Sub Queries', link: '/guide/sub-queries' },
                 { text: 'Update & Delete', link: '/guide/bulk-operations' },
+                { text: 'UPSERT / MergeSpec', link: '/guide/upsert' },
+                { text: 'CTE', link: '/guide/cte' },
                 { text: 'Soft Delete', link: '/guide/soft-delete' },
+                { text: 'Encryption', link: '/guide/encryption' },
+                { text: 'Audit', link: '/guide/audit' },
                 { text: 'MyJpaTemplate', link: '/guide/myjpa-template' },
-                { text: 'Projection', link: '/guide/projection' }
+                { text: 'Projection', link: '/guide/projection' },
+                { text: 'Code Generation', link: '/guide/code-generation' }
               ]
             },
             {
@@ -76,7 +81,7 @@ export default defineConfig({
           { text: '指南', link: '/zh/guide/getting-started' },
           { text: 'API', link: '/zh/guide/api' },
           {
-            text: 'v1.0.0',
+              text: 'v1.2.0',
             items: [
               { text: '更新日志', link: '/zh/changelog' },
               { text: '贡献指南', link: '/zh/contributing' }
@@ -99,9 +104,14 @@ export default defineConfig({
                 { text: '关联查询', link: '/zh/guide/joins' },
                 { text: '子查询', link: '/zh/guide/sub-queries' },
                 { text: '批量更新与删除', link: '/zh/guide/bulk-operations' },
+                { text: 'UPSERT / MergeSpec', link: '/zh/guide/upsert' },
+                { text: 'CTE 公共表表达式', link: '/zh/guide/cte' },
                 { text: '软删除', link: '/zh/guide/soft-delete' },
+                { text: '字段加密', link: '/zh/guide/encryption' },
+                { text: '审计注解', link: '/zh/guide/audit' },
                 { text: 'MyJpaTemplate', link: '/zh/guide/myjpa-template' },
-                { text: '投影查询', link: '/zh/guide/projection' }
+                { text: '投影查询', link: '/zh/guide/projection' },
+                { text: '代码生成', link: '/zh/guide/code-generation' }
               ]
             },
             {
