@@ -21,12 +21,43 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
+
       - run: npm ci
       - run: npm run build
+
+      # Fetch existing versioned docs from the versioned branch
+      - name: Fetch versioned docs
+        run: |
+          git fetch origin versioned:refs/remotes/origin/versioned || true
+
+      - name: Include versioned docs in deployment
+        run: |
+          if git rev-parse --verify refs/remotes/origin/versioned >/dev/null 2>&1; then
+            mkdir -p /tmp/versioned
+            git --work-tree=/tmp/versioned checkout origin/versioned -- . 2>/dev/null || true
+            # Copy version directories (v1.x.x/) into dist, excluding root files
+            cd /tmp/versioned
+            for dir in v*/; do
+              if [ -d "$dir" ]; then
+                echo "Including versioned docs: $dir"
+                cp -r "$dir" "$GITHUB_WORKSPACE/.vitepress/dist/"
+              fi
+            done
+            # Copy versions.json if it exists
+            if [ -f "versions.json" ]; then
+              cp versions.json "$GITHUB_WORKSPACE/.vitepress/dist/"
+            fi
+            cd "$GITHUB_WORKSPACE"
+            rm -rf /tmp/versioned
+          else
+            echo "No versioned branch found, deploying latest only"
+          fi
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .vitepress/dist

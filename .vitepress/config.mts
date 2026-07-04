@@ -22,8 +22,11 @@ export default defineConfig({
           {
             text: 'v1.3.0',
             items: [
-              { text: 'Changelog', link: '/changelog' },
-              { text: 'Contributing', link: '/contributing' }
+              { text: 'v1.3.0 (latest)', link: '/guide/what-is-myjpa-plus' },
+              { text: 'v1.2.0', link: '/v1.2.0/guide/what-is-myjpa-plus' },
+              { text: '---' },
+              { text: 'Changelog', link: '/guide/changelog' },
+              { text: 'Contributing', link: '/guide/contributing' }
             ]
           }
         ],
@@ -81,10 +84,13 @@ export default defineConfig({
           { text: '指南', link: '/zh/guide/getting-started' },
           { text: 'API', link: '/zh/guide/api' },
           {
-              text: 'v1.3.0',
+            text: 'v1.3.0',
             items: [
-              { text: '更新日志', link: '/zh/changelog' },
-              { text: '贡献指南', link: '/zh/contributing' }
+              { text: 'v1.3.0 (最新)', link: '/zh/guide/what-is-myjpa-plus' },
+              { text: 'v1.2.0', link: '/zh/v1.2.0/guide/what-is-myjpa-plus' },
+              { text: '---' },
+              { text: '更新日志', link: '/zh/guide/changelog' },
+              { text: '贡献指南', link: '/zh/guide/contributing' }
             ]
           }
         ],
