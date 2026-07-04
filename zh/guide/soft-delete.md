@@ -98,25 +98,70 @@ public class User {
 ```java
 public interface ProductRepository extends MyJpaRepository<Product, Long> {
 }
+```
 
+```java
 // 查找所有未删除的产品
 List<Product> products = repository.findNotDeletedAll();
+```
 
+生成的 SQL：
+```sql
+SELECT * FROM products WHERE deleted = false
+```
+
+```java
 // 带条件查找未删除的实体
 List<Product> products = repository.findNotDeletedAll(spec);
+```
 
+生成的 SQL：
+```sql
+SELECT * FROM products WHERE deleted = false AND status = 'ACTIVE'
+```
+
+```java
 // 分页查找未删除的实体
 Page<Product> products = repository.findNotDeletedAll(spec, pageable);
+```
 
+生成的 SQL：
+```sql
+-- 统计
+SELECT COUNT(*) FROM products WHERE deleted = false AND status = 'ACTIVE'
+
+-- 数据
+SELECT * FROM products WHERE deleted = false AND status = 'ACTIVE' LIMIT 20 OFFSET 0
+```
+
+```java
 // 查找单个未删除的实体
 Optional<Product> product = repository.findNotDeletedOne(spec);
+```
 
+生成的 SQL：
+```sql
+SELECT * FROM products WHERE deleted = false AND status = 'ACTIVE' LIMIT 1
+```
+
+```java
 // 根据 ID 查找未删除的实体
 Optional<Product> product = repository.findNotDeletedById(id);
+```
 
+生成的 SQL：
+```sql
+SELECT * FROM products WHERE id = ? AND deleted = false
+```
+
+```java
 // 统计未删除的实体数量
 long count = repository.countNotDeleted();
-long count = repository.countNotDeleted(spec);
+```
+
+生成的 SQL：
+```sql
+SELECT COUNT(*) FROM products WHERE deleted = false
 ```
 
 ## 使用 SoftDeleteHelper
@@ -127,15 +172,22 @@ long count = repository.countNotDeleted(spec);
 // 获取未删除实体的 Specification（缓存）
 Specification<Product> notDeleted = SoftDeleteHelper.isNotDeleted(Product.class);
 List<Product> products = repository.findAll(notDeleted);
+```
 
+生成的 SQL：
+```sql
+SELECT * FROM products WHERE deleted = false
+```
+
+```java
 // 仅获取已删除的实体（缓存）
 Specification<Product> deleted = SoftDeleteHelper.isDeleted(Product.class);
 List<Product> archived = repository.findAll(deleted);
+```
 
-// 与其他 Specification 组合
-Specification<Product> active = SoftDeleteHelper.isNotDeleted(Product.class)
-    .and((root, query, cb) -> cb.equal(root.get("status"), "ACTIVE"));
-List<Product> products = repository.findAll(active);
+生成的 SQL：
+```sql
+SELECT * FROM products WHERE deleted = true
 ```
 
 ## 使用 QuerySpec
@@ -147,24 +199,9 @@ qs.eq(Product::getCategory, "Electronics");
 List<Product> products = repository.findAll(qs.toSpecification());
 ```
 
-## 工具方法
-
-```java
-// 查找软删除字段名（缓存，无字段返回 null）
-String fieldName = SoftDeleteHelper.findSoftDeleteField(Product.class);
-
-// 检查实体实例是否已软删除
-boolean isDeleted = SoftDeleteHelper.isSoftDeleted(Product.class, product);
-```
-
-## 自动过滤配置
-
-在 `application.yml` 中启用自动软删除过滤：
-
-```yaml
-myjpa-plus:
-  soft-delete:
-    auto-filter: true  # 默认：true
+生成的 SQL：
+```sql
+SELECT * FROM products WHERE deleted = false AND category = 'Electronics'
 ```
 
 ## @IgnoreSoftDelete
@@ -176,31 +213,12 @@ myjpa-plus:
 @IgnoreSoftDelete
 @Query("SELECT p FROM Product p WHERE p.id = :id")
 Optional<Product> findByIdIncludingDeleted(@Param("id") Long id);
-
-// 跳过整个仓库
-@IgnoreSoftDelete
-public interface ArchiveRepository extends MyJpaRepository<Product, Long> {
-    // 此仓库中的所有查询都包含已软删除的实体
-}
 ```
 
-## SoftDeleteFilterBean
-
-使用 `SoftDeleteFilterBean` 进行编程控制：
-
-```java
-@Autowired
-private SoftDeleteFilterBean filterBean;
-
-// 对任何 Specification 应用软删除过滤
-Specification<Product> spec = ...;
-Specification<Product> filtered = filterBean.apply(spec, Product.class);
-
-// 检查实体是否有软删除字段
-boolean hasSoftDelete = filterBean.hasSoftDeleteField(Product.class);
-
-// 预注册实体以缓存结果
-filterBean.registerEntity(Product.class);
+生成的 SQL：
+```sql
+SELECT * FROM products WHERE id = ?
+-- 注意：没有 deleted = false 条件，包含已删除的记录
 ```
 
 ## SoftDeleteBulkExecutor
@@ -210,17 +228,22 @@ filterBean.registerEntity(Product.class);
 ```java
 // 软删除所有实体（带行数保护）
 int affected = SoftDeleteBulkExecutor.softDeleteAll(em, User.class, true);
+```
 
-// 自定义最大行数（默认：10000）
-int affected = SoftDeleteBulkExecutor.softDeleteAll(em, User.class, true, 5000);
+生成的 SQL：
+```sql
+UPDATE users SET deleted = true WHERE deleted = false
+```
 
+```java
 // 按 ID 软删除
 int affected = SoftDeleteBulkExecutor.softDeleteByIds(em, User.class, List.of(1L, 2L, 3L));
 ```
 
-::: warning 行数保护
-`softDeleteAll()` 在执行前检查 `TransactionSynchronizationManager.isActualTransactionActive()`。没有活动事务时会抛出异常，防止不可回滚的数据丢失。
-:::
+生成的 SQL：
+```sql
+UPDATE users SET deleted = true WHERE id IN (1, 2, 3) AND deleted = false
+```
 
 ## SoftDeleteContext（虚拟线程支持）
 
@@ -229,15 +252,10 @@ int affected = SoftDeleteBulkExecutor.softDeleteByIds(em, User.class, List.of(1L
 ```java
 // 使用 withIgnore — 推荐用于虚拟线程
 List<User> allUsers = SoftDeleteContext.withIgnore(() -> repository.findAll());
+```
 
-// 带返回值的 withIgnore
-Optional<User> user = SoftDeleteContext.withIgnore(() -> repository.findById(id));
-
-// 手动 push/pop（旧方式，仍支持）
-SoftDeleteContext.pushIgnore();
-try {
-    List<User> all = repository.findAll();
-} finally {
-    SoftDeleteContext.popIgnore();
-}
+生成的 SQL（临时禁用软删除过滤）：
+```sql
+SELECT * FROM users
+-- 注意：没有 deleted = false 条件，包含所有记录
 ```

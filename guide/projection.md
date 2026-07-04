@@ -1,97 +1,112 @@
 # Projection Queries
 
-`ProjectionSpec` provides type-safe DTO projection queries. It supports both Tuple-based and constructor-based DTO projection with JOIN support.
+Projection queries let you select specific fields instead of loading entire entities. Use `QuerySpec.select()` to choose fields, and `MyJpaTemplate.find()` to execute the projection.
 
 ## Basic Usage
 
 ### Tuple Projection
 
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName)
-    .select(User::getEmail)
-    .where(q -> q.eq(User::getStatus, "ACTIVE"));
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(User::getName, User::getEmail)
+    .eq(User::getStatus, "ACTIVE");
 
-TypedQuery<Tuple> query = spec.toTupleQuery(entityManager);
-List<Tuple> results = query.getResultList();
+List<Tuple> results = template.find(User.class, spec);
+```
 
-// Access results
-for (Tuple tuple : results) {
-    String name = tuple.get(0, String.class);
-    String email = tuple.get(1, String.class);
-}
+Generated SQL:
+```sql
+SELECT name, email FROM users WHERE status = 'ACTIVE'
 ```
 
 ### DTO Constructor Projection
 
 ```java
-// DTO class with constructor matching selected fields
-public class UserSummary {
-    private String name;
-    private String email;
-    
-    public UserSummary(String name, String email) {
-        this.name = name;
-        this.email = email;
-    }
-}
+// DTO class — constructor params matched by name (see DTO Name Matching below)
+public record UserSummary(String name, String email) {}
 
-// Build projection
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName)
-    .select(User::getEmail)
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(User::getName, User::getEmail)
     .asDto(UserSummary.class)
-    .where(q -> q.eq(User::getStatus, "ACTIVE"));
+    .eq(User::getStatus, "ACTIVE");
 
-TypedQuery<UserSummary> query = spec.toDtoQuery(entityManager);
-List<UserSummary> results = query.getResultList();
+List<UserSummary> results = template.find(User.class, spec);
+```
+
+Generated SQL:
+```sql
+SELECT name, email FROM users WHERE status = 'ACTIVE'
 ```
 
 ## WHERE Conditions
 
-Use the `where()` method to add conditions via `QuerySpec`:
+Add conditions directly on the `QuerySpec`:
 
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName)
-    .select(User::getAge)
-    .where(q -> q
-        .eq(User::getStatus, "ACTIVE")
-        .gt(User::getAge, 18)
-        .orderByAsc(User::getName));
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(User::getName, User::getAge)
+    .eq(User::getStatus, "ACTIVE")
+    .gt(User::getAge, 18)
+    .orderByAsc(User::getName);
+
+List<Tuple> results = template.find(User.class, spec);
+```
+
+Generated SQL:
+```sql
+SELECT name, age FROM users WHERE status = 'ACTIVE' AND age > 18 ORDER BY name ASC
 ```
 
 ## JOIN Support
 
-Add JOINs to projection queries:
-
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
+QuerySpec<User> spec = new QuerySpec<User>()
     .select(User::getName)
     .select(Department::getName)  // field from joined entity
     .join(User::getDepartment, j -> j
         .eq(Department::getActive, true))
-    .where(q -> q.eq(User::getStatus, "ACTIVE"));
+    .eq(User::getStatus, "ACTIVE");
 
-TypedQuery<Tuple> query = spec.toTupleQuery(entityManager);
+List<Tuple> results = template.find(User.class, spec);
+```
+
+Generated SQL:
+```sql
+SELECT u.name, d.name
+FROM users u
+INNER JOIN departments d ON u.department_id = d.id
+WHERE d.active = true AND u.status = 'ACTIVE'
 ```
 
 ### LEFT JOIN
 
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
+QuerySpec<User> spec = new QuerySpec<User>()
     .select(User::getName)
     .leftJoin(User::getDepartment, j -> j
         .eq(Department::getActive, true))
-    .where(q -> q.eq(User::getStatus, "ACTIVE"));
+    .eq(User::getStatus, "ACTIVE");
+```
+
+Generated SQL:
+```sql
+SELECT u.name
+FROM users u
+LEFT JOIN departments d ON u.department_id = d.id
+WHERE d.active = true AND u.status = 'ACTIVE'
 ```
 
 ## DISTINCT
 
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
+QuerySpec<User> spec = new QuerySpec<User>()
     .select(User::getDepartment)
     .distinct();
+```
+
+Generated SQL:
+```sql
+SELECT DISTINCT department FROM users
 ```
 
 ## Aggregate Functions
@@ -99,180 +114,200 @@ ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
 ### COUNT
 
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .selectCount();
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(QuerySpec.count());
 
-Tuple result = spec.toTupleQuery(entityManager).getSingleResult();
-long count = result.get("count", Long.class);
+List<Tuple> results = template.find(User.class, spec);
+```
+
+Generated SQL:
+```sql
+SELECT COUNT(*) FROM users
 ```
 
 ### COUNT(DISTINCT)
 
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
+QuerySpec<User> spec = new QuerySpec<User>()
     .select(User::getDepartment)
-    .selectCountDistinct()
+    .select(QuerySpec.countDistinct())
     .groupBy(User::getDepartment);
+```
+
+Generated SQL:
+```sql
+SELECT department, COUNT(DISTINCT department) FROM users GROUP BY department
 ```
 
 ### SUM, AVG, MAX, MIN
 
 ```java
-ProjectionSpec<Order> spec = new ProjectionSpec<>(Order.class)
+QuerySpec<Order> spec = new QuerySpec<Order>()
     .select(Order::getCustomerId)
-    .selectSum(Order::getAmount)
-    .selectAvg(Order::getAmount)
-    .selectMax(Order::getAmount)
-    .selectMin(Order::getAmount)
+    .select(QuerySpec.sum(Order::getAmount))
+    .select(QuerySpec.avg(Order::getAmount))
+    .select(QuerySpec.max(Order::getAmount))
+    .select(QuerySpec.min(Order::getAmount))
     .groupBy(Order::getCustomerId);
+```
 
-List<Tuple> results = spec.toTupleQuery(entityManager).getResultList();
-for (Tuple tuple : results) {
-    Long customerId = tuple.get("customerId", Long.class);
-    BigDecimal totalAmount = tuple.get("sum_amount", BigDecimal.class);
-    BigDecimal avgAmount = tuple.get("avg_amount", BigDecimal.class);
-}
+Generated SQL:
+```sql
+SELECT customer_id, SUM(amount), AVG(amount), MAX(amount), MIN(amount)
+FROM orders
+GROUP BY customer_id
 ```
 
 ### GROUP BY with HAVING
 
 ```java
-ProjectionSpec<Order> spec = new ProjectionSpec<>(Order.class)
+QuerySpec<Order> spec = new QuerySpec<Order>()
     .select(Order::getCustomerId)
-    .selectCount()
+    .select(QuerySpec.count())
     .groupBy(Order::getCustomerId)
     .having((root, cb) -> cb.greaterThan(cb.count(root), 5L));
+```
 
-List<Tuple> results = spec.toTupleQuery(entityManager).getResultList();
+Generated SQL:
+```sql
+SELECT customer_id, COUNT(*)
+FROM orders
+GROUP BY customer_id
+HAVING COUNT(*) > 5
 ```
 
 ### Combined Aggregates with Fields
 
-When mixing aggregate and non-aggregate fields, you must include all non-aggregate fields in `groupBy()`:
+When mixing aggregate and non-aggregate fields, include all non-aggregate fields in `groupBy()`:
 
 ```java
-ProjectionSpec<Order> spec = new ProjectionSpec<>(Order.class)
-    .select(Order::getCustomerId)
-    .select(Order::getStatus)
-    .selectCount()
-    .selectSum(Order::getAmount)
+QuerySpec<Order> spec = new QuerySpec<Order>()
+    .select(Order::getCustomerId, Order::getStatus)
+    .select(QuerySpec.count())
+    .select(QuerySpec.sum(Order::getAmount))
     .groupBy(Order::getCustomerId, Order::getStatus)
     .having((root, cb) -> cb.greaterThan(cb.count(root), 3L))
     .orderByDesc(Order::getCustomerId);
 ```
 
-## Sorting
+Generated SQL:
+```sql
+SELECT customer_id, status, COUNT(*), SUM(amount)
+FROM orders
+GROUP BY customer_id, status
+HAVING COUNT(*) > 3
+ORDER BY customer_id DESC
+```
+
+## Custom Column Aliases
+
+Use `selectAs()` to override the default column name:
 
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName)
-    .select(User::getCreatedAt)
-    .orderByAsc(User::getName)
-    .orderByDesc(User::getCreatedAt);
+QuerySpec<User> spec = new QuerySpec<User>()
+    .selectAs(User::getName, "fullName")
+    .selectAs(User::getCreatedAt, "joinDate")
+    .eq(User::getStatus, "ACTIVE");
+
+List<Tuple> results = template.find(User.class, spec);
+```
+
+Generated SQL:
+```sql
+SELECT name AS fullName, created_at AS joinDate FROM users WHERE status = 'ACTIVE'
+```
+
+## DTO Name Matching
+
+Constructor parameters are matched by **name** rather than position. Use Java records or compile with `-parameters` for automatic matching:
+
+```java
+// Record — component names auto-match field names
+public record UserSummary(String name, String email, Integer age) {}
+
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(User::getAge)     // matched to "age"
+    .select(User::getName)    // matched to "name"
+    .select(User::getEmail)   // matched to "email"
+    .asDto(UserSummary.class); // order doesn't matter!
+
+List<UserSummary> results = template.find(User.class, spec);
+```
+
+Generated SQL:
+```sql
+SELECT age, name, email FROM users
+```
+
+For regular classes, add `-parameters` to javac:
+
+```xml
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <configuration>
+        <parameters>true</parameters>
+    </configuration>
+</plugin>
 ```
 
 ## Pagination
 
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName)
-    .select(User::getEmail)
-    .where(q -> q.eq(User::getStatus, "ACTIVE"));
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(User::getName, User::getEmail)
+    .eq(User::getStatus, "ACTIVE");
 
-Page<Tuple> page = spec.findPage(entityManager, PageRequest.of(0, 20));
-List<Tuple> content = page.getContent();
-long total = page.getTotalElements();
+Page<Tuple> page = template.projectionPage(User.class, spec, PageRequest.of(0, 20));
 ```
 
-## Streaming Results
+Generated SQL:
+```sql
+-- Count query
+SELECT COUNT(*) FROM users WHERE status = 'ACTIVE'
 
-For large result sets, use streaming to avoid loading everything into memory:
-
-```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName)
-    .select(User::getEmail)
-    .where(q -> q.eq(User::getStatus, "ACTIVE"));
-
-try (Stream<Tuple> stream = spec.getResultStream(entityManager)) {
-    stream.forEach(tuple -> {
-        String name = tuple.get("name", String.class);
-        String email = tuple.get("email", String.class);
-        processUser(name, email);
-    });
-}
+-- Data query
+SELECT name, email FROM users WHERE status = 'ACTIVE' LIMIT 20 OFFSET 0
 ```
 
-## Custom Max Results
+## Sorting
 
 ```java
-// Limit to 100 results
-TypedQuery<Tuple> query = spec.toTupleQuery(entityManager, 100);
-
-// Unlimited (use with caution)
-TypedQuery<Tuple> query = spec.toTupleQuery(entityManager, -1);
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(User::getName, User::getCreatedAt)
+    .orderByAsc(User::getName)
+    .orderByDesc(User::getCreatedAt);
 ```
 
-## Deep Pagination Settings
-
-Configure warnings and limits for high-offset queries:
-
-```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName)
-    .withDeepPaginationThreshold(50000)   // warn at offset 50k
-    .withDeepPaginationLimit(200000)      // hard limit at 200k
-    .where(q -> q.eq(User::getStatus, "ACTIVE"));
+Generated SQL:
+```sql
+SELECT name, created_at FROM users ORDER BY name ASC, created_at DESC
 ```
 
 ## Soft Delete Filter
 
-`ProjectionSpec` automatically detects `@SoftDelete` fields and filters deleted records. You can control this:
+Soft delete filtering is applied automatically for `@SoftDelete` entities when using `MyJpaTemplate`:
 
 ```java
-// Explicitly enable (default for @SoftDelete entities)
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
+QuerySpec<User> spec = new QuerySpec<User>()
     .select(User::getName)
-    .withSoftDeleteFilter();
+    .eq(User::getStatus, "ACTIVE");
 
-// Soft delete is auto-detected — this also filters deleted records
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName);
+List<Tuple> results = template.find(User.class, spec);
 ```
 
-## Accessing Underlying QuerySpec
-
-For advanced use cases, access the underlying `QuerySpec` directly:
-
-```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName);
-
-QuerySpec<User> conditions = spec.conditions();
-conditions.eq(User::getStatus, "ACTIVE");
-conditions.orderByAsc(User::getName);
+Generated SQL (with @SoftDelete on `deleted` field):
+```sql
+SELECT name FROM users WHERE status = 'ACTIVE' AND deleted = false
 ```
 
 ## Complete Example
 
 ```java
-public class OrderSummary {
-    private String customerName;
-    private String productName;
-    private BigDecimal amount;
-    private Instant orderDate;
-    
-    public OrderSummary(String customerName, String productName, 
-                        BigDecimal amount, Instant orderDate) {
-        this.customerName = customerName;
-        this.productName = productName;
-        this.amount = amount;
-        this.orderDate = orderDate;
-    }
-}
+public record OrderSummary(String customerName, String productName,
+                            BigDecimal amount, Instant orderDate) {}
 
-// Build projection query
-ProjectionSpec<Order> spec = new ProjectionSpec<>(Order.class)
+QuerySpec<Order> spec = new QuerySpec<Order>()
     .select(Customer::getName)
     .select(Product::getName)
     .select(Order::getAmount)
@@ -282,13 +317,22 @@ ProjectionSpec<Order> spec = new ProjectionSpec<>(Order.class)
         .eq(Customer::getCountry, "CN"))
     .join(Order::getProduct, j -> j
         .eq(Product::getCategory, "Electronics"))
-    .where(q -> q
-        .eq(Order::getStatus, "PAID")
-        .between(Order::getCreatedAt, startDate, endDate)
-        .orderByDesc(Order::getCreatedAt))
+    .eq(Order::getStatus, "PAID")
+    .between(Order::getCreatedAt, startDate, endDate)
     .orderByDesc(Order::getCreatedAt);
 
-// Execute
-TypedQuery<OrderSummary> query = spec.toDtoQuery(entityManager);
-List<OrderSummary> results = query.getResultList();
+List<OrderSummary> results = template.find(Order.class, spec);
+```
+
+Generated SQL:
+```sql
+SELECT c.name, p.name, o.amount, o.created_at
+FROM orders o
+INNER JOIN customers c ON o.customer_id = c.id
+INNER JOIN products p ON o.product_id = p.id
+WHERE c.country = 'CN'
+  AND p.category = 'Electronics'
+  AND o.status = 'PAID'
+  AND o.created_at BETWEEN ? AND ?
+ORDER BY o.created_at DESC
 ```

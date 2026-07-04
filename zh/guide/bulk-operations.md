@@ -14,6 +14,11 @@ int count = new UpdateSpec<>(User.class)
     .execute(entityManager);
 ```
 
+生成的 SQL：
+```sql
+UPDATE users SET status = 'INACTIVE' WHERE last_login_at IS NULL
+```
+
 ### 多字段更新
 
 ```java
@@ -22,6 +27,11 @@ int count = new UpdateSpec<>(User.class)
     .set(User::setUpdatedAt, Instant.now())
     .lt(User::getLastLoginAt, cutoffDate)
     .execute(entityManager);
+```
+
+生成的 SQL：
+```sql
+UPDATE users SET status = 'ARCHIVED', updated_at = ? WHERE last_login_at < ?
 ```
 
 ### 条件 SET
@@ -36,6 +46,11 @@ int count = new UpdateSpec<>(User.class)
     .execute(entityManager);
 ```
 
+生成的 SQL（当 `name = "张三"` 时）：
+```sql
+UPDATE users SET status = 'INACTIVE', name = '张三' WHERE status = 'PENDING'
+```
+
 ### 带 OR 条件的更新
 
 ```java
@@ -47,6 +62,11 @@ int count = new UpdateSpec<>(User.class)
     .execute(entityManager);
 ```
 
+生成的 SQL：
+```sql
+UPDATE users SET status = 'INACTIVE' WHERE status = 'BANNED' OR status = 'SUSPENDED'
+```
+
 ### 带 NOT 条件的更新
 
 ```java
@@ -54,6 +74,11 @@ int count = new UpdateSpec<>(User.class)
     .set(User::setStatus, "INACTIVE")
     .not(n -> n.eq(User::getRole, "ADMIN"))
     .execute(entityManager);
+```
+
+生成的 SQL：
+```sql
+UPDATE users SET status = 'INACTIVE' WHERE NOT (role = 'ADMIN')
 ```
 
 ### 事务管理
@@ -66,6 +91,11 @@ int count = new UpdateSpec<>(User.class)
     .executeInTransaction(entityManager);
 ```
 
+生成的 SQL：
+```sql
+UPDATE users SET status = 'INACTIVE' WHERE status = 'PENDING'
+```
+
 ### 限量更新
 
 ```java
@@ -76,6 +106,11 @@ int count = new UpdateSpec<>(User.class)
     .executeLimited(entityManager, 100);
 ```
 
+生成的 SQL：
+```sql
+UPDATE users SET status = 'PROCESSED' WHERE status = 'PENDING' LIMIT 100
+```
+
 ### 更新全部（无条件）
 
 ```java
@@ -83,11 +118,11 @@ int count = new UpdateSpec<>(User.class)
 int count = new UpdateSpec<>(User.class)
     .set(User::setStatus, "ARCHIVED")
     .updateAll(entityManager);
+```
 
-// 带事务管理
-int count = new UpdateSpec<>(User.class)
-    .set(User::setStatus, "ARCHIVED")
-    .updateAllInTransaction(entityManager);
+生成的 SQL：
+```sql
+UPDATE users SET status = 'ARCHIVED'
 ```
 
 ### 表达式 SET（原子递增/递减）
@@ -100,13 +135,27 @@ int count = new UpdateSpec<>(User.class)
     .setAdd(User::getLoginCount, 1)
     .eq(User::getId, userId)
     .execute(entityManager);
+```
 
+生成的 SQL：
+```sql
+UPDATE users SET login_count = login_count + 1 WHERE id = ?
+```
+
+```java
 // 库存数量减 5
 int count = new UpdateSpec<>(Product.class)
     .setSubtract(Product::getStock, 5)
     .gt(Product::getStock, 5)
     .execute(entityManager);
+```
 
+生成的 SQL：
+```sql
+UPDATE products SET stock = stock - 5 WHERE stock > 5
+```
+
+```java
 // 与其他 SET 操作组合使用
 int count = new UpdateSpec<>(User.class)
     .set(User::setStatus, "ACTIVE")
@@ -114,6 +163,11 @@ int count = new UpdateSpec<>(User.class)
     .set(User::setLastLoginAt, Instant.now())
     .eq(User::getId, userId)
     .execute(entityManager);
+```
+
+生成的 SQL：
+```sql
+UPDATE users SET status = 'ACTIVE', login_count = login_count + 1, last_login_at = ? WHERE id = ?
 ```
 
 ### 乐观锁版本递增
@@ -128,26 +182,26 @@ int count = new UpdateSpec<>(User.class)
     .execute(entityManager);
 ```
 
+生成的 SQL：
+```sql
+UPDATE users SET status = 'INACTIVE', version = version + 1 WHERE id = ? AND version = ?
+```
+
 ### 允许无条件操作
 
-无条件的 `updateAll()` 和 `deleteAll()` 需要显式启用，以防止意外的批量更新：
+无条件的 `updateAll()` 和 `deleteAll()` 需要显式启用：
 
 ```java
-// 未设置 allowUnconditional — 抛出 IllegalStateException
-new UpdateSpec<>(User.class)
-    .set(User::setStatus, "ARCHIVED")
-    .updateAll(em); // 报错！
-
 // 设置 allowUnconditional — 正常执行
 int count = new UpdateSpec<>(User.class)
     .set(User::setStatus, "ARCHIVED")
     .allowUnconditional(true)
-    .updateAll(em); // 正常
+    .updateAll(em);
+```
 
-// 删除同理
-int count = new DeleteSpec<>(User.class)
-    .allowUnconditional(true)
-    .deleteAll(em);
+生成的 SQL：
+```sql
+UPDATE users SET status = 'ARCHIVED'
 ```
 
 ### 执行前预估行数
@@ -160,13 +214,11 @@ UpdateSpec<User> spec = new UpdateSpec<>(User.class)
     .eq(User::getStatus, "ACTIVE");
 
 long estimated = spec.countBeforeExecute(entityManager);
-System.out.println("将更新 " + estimated + " 行");
+```
 
-if (estimated > 1000) {
-    throw new RuntimeException("更新行数过多");
-}
-
-int count = spec.execute(entityManager);
+统计 SQL：
+```sql
+SELECT COUNT(*) FROM users WHERE status = 'ACTIVE'
 ```
 
 ### 构建 CriteriaUpdate 不执行
@@ -178,6 +230,11 @@ CriteriaUpdate<User> cu = new UpdateSpec<>(User.class)
     .toUpdate(entityManager);
 ```
 
+生成的 CriteriaUpdate：
+```sql
+UPDATE users SET status = 'INACTIVE' WHERE status = 'PENDING'
+```
+
 ## DeleteSpec
 
 ### 基本删除
@@ -186,6 +243,11 @@ CriteriaUpdate<User> cu = new UpdateSpec<>(User.class)
 int count = new DeleteSpec<>(User.class)
     .eq(User::getStatus, "DELETED")
     .execute(entityManager);
+```
+
+生成的 SQL：
+```sql
+DELETE FROM users WHERE status = 'DELETED'
 ```
 
 ### 复杂条件删除
@@ -199,16 +261,22 @@ int count = new DeleteSpec<>(User.class)
     .execute(entityManager);
 ```
 
+生成的 SQL：
+```sql
+DELETE FROM users WHERE created_at < ? AND (status = 'INACTIVE' OR status = 'BANNED')
+```
+
 ### 删除全部（无条件）
 
 ```java
 // 警告：删除所有记录！
 int count = new DeleteSpec<>(User.class)
     .deleteAll(entityManager);
+```
 
-// 带事务管理
-int count = new DeleteSpec<>(User.class)
-    .deleteAllInTransaction(entityManager);
+生成的 SQL：
+```sql
+DELETE FROM users
 ```
 
 ### 限量删除
@@ -219,12 +287,22 @@ int count = new DeleteSpec<>(User.class)
     .executeLimited(entityManager, 1000);
 ```
 
+生成的 SQL：
+```sql
+DELETE FROM users WHERE status = 'EXPIRED' LIMIT 1000
+```
+
 ### 构建 CriteriaDelete 不执行
 
 ```java
 CriteriaDelete<User> cd = new DeleteSpec<>(User.class)
     .eq(User::getStatus, "DELETED")
     .toDelete(entityManager);
+```
+
+生成的 CriteriaDelete：
+```sql
+DELETE FROM users WHERE status = 'DELETED'
 ```
 
 ## 使用 MyJpaTemplate
@@ -245,39 +323,33 @@ int count = template.update(User.class)
 int count = template.delete(User.class)
     .eq(User::getStatus, "DELETED")
     .execute(em);
+```
 
-// 批量更新，带大小限制
-int count = template.executeBatch(
-    template.update(User.class)
-        .set(User::setStatus, "PROCESSED")
-        .eq(User::getStatus, "PENDING"),
-    100
-);
+生成的 SQL：
+```sql
+-- 更新
+UPDATE users SET status = 'INACTIVE' WHERE status = 'PENDING'
 
-// 批量删除，带大小限制
-int count = template.executeBatch(
-    template.delete(User.class)
-        .eq(User::getStatus, "EXPIRED"),
-    100
-);
+-- 删除
+DELETE FROM users WHERE status = 'DELETED'
 ```
 
 ## 分离事务的批量操作
 
-处理大数据集时，可按批次使用独立事务。如果某一批次失败，之前的批次已提交：
+处理大数据集时，可按批次使用独立事务：
 
 ```java
-// 批量更新 — 每批独立提交
 MyJpaTemplate.BatchResult result = template.executeBatchInSeparateTransactions(
     template.update(User.class)
         .set(User::getStatus, "PROCESSED")
         .eq(User::getStatus, "PENDING"),
     500  // 批次大小
 );
+```
 
-if (!result.isSuccess()) {
-    log.error("第 {} 批失败：{}", result.getFailedBatchIndex(), result.getFailureCause());
-}
+每批执行的 SQL：
+```sql
+UPDATE users SET status = 'PROCESSED' WHERE status = 'PENDING' LIMIT 500
 ```
 
 ### 失败策略
@@ -293,25 +365,9 @@ template.executeBatchInSeparateTransactions(
     500,
     MyJpaTemplate.BatchFailureStrategy.CONTINUE
 );
-
-// ABORT — 首次失败即停止
-template.executeBatchInSeparateTransactions(
-    template.delete(LogEntry.class)
-        .lt(LogEntry::getTimestamp, cutoffDate),
-    500,
-    MyJpaTemplate.BatchFailureStrategy.ABORT
-);
 ```
 
-## 错误处理
-
-```java
-// 如果没有条件，抛出 IllegalStateException（防止意外批量更新/删除）
-new UpdateSpec<>(User.class)
-    .set(User::getStatus, "NEW")
-    .execute(em);  // 抛出异常！
-
-// 无条件操作需要显式调用
-new DeleteSpec<>(User.class)
-    .deleteAll(em);  // 正常 - 明确意图
+生成的 SQL：
+```sql
+UPDATE users SET status = 'DONE' WHERE status = 'PENDING' LIMIT 500
 ```

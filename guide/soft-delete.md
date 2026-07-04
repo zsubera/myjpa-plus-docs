@@ -101,22 +101,65 @@ public interface ProductRepository extends MyJpaRepository<Product, Long> {
 
 // Find all non-deleted products
 List<Product> products = repository.findNotDeletedAll();
+```
 
+Generated SQL:
+```sql
+SELECT * FROM products WHERE deleted = false
+```
+
+```java
 // Find non-deleted entities with conditions
 List<Product> products = repository.findNotDeletedAll(spec);
+```
 
+Generated SQL:
+```sql
+SELECT * FROM products WHERE deleted = false AND status = 'ACTIVE'
+```
+
+```java
 // Paginated non-deleted entities
 Page<Product> products = repository.findNotDeletedAll(spec, pageable);
+```
 
+Generated SQL:
+```sql
+-- Count
+SELECT COUNT(*) FROM products WHERE deleted = false AND status = 'ACTIVE'
+
+-- Data
+SELECT * FROM products WHERE deleted = false AND status = 'ACTIVE' LIMIT 20 OFFSET 0
+```
+
+```java
 // Find single non-deleted entity
 Optional<Product> product = repository.findNotDeletedOne(spec);
+```
 
+Generated SQL:
+```sql
+SELECT * FROM products WHERE deleted = false AND status = 'ACTIVE' LIMIT 1
+```
+
+```java
 // Find non-deleted entity by ID
 Optional<Product> product = repository.findNotDeletedById(id);
+```
 
+Generated SQL:
+```sql
+SELECT * FROM products WHERE id = ? AND deleted = false
+```
+
+```java
 // Count non-deleted entities
 long count = repository.countNotDeleted();
-long count = repository.countNotDeleted(spec);
+```
+
+Generated SQL:
+```sql
+SELECT COUNT(*) FROM products WHERE deleted = false
 ```
 
 ## Using SoftDeleteHelper

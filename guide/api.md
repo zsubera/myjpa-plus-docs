@@ -275,44 +275,34 @@ Common Table Expression builder.
 | `buildSql()` | Build SQL without executing |
 | `isStrictMode()` | Returns true (always enforced) |
 
-## ProjectionSpec\<T\>
+## QuerySpec Projection Methods
 
-DTO projection query builder supporting Tuple and constructor-based DTO projection.
+Projection queries are built on `QuerySpec` and executed via `MyJpaTemplate`.
 
 | Method | Description |
 |--------|-------------|
-| `ProjectionSpec(entityClass)` | Constructor (auto-detects @SoftDelete) |
-| `withDefaults(entityClass)` | Static factory (same as constructor) |
-| `select(field)` | Add field to SELECT |
-| `distinct()` | Enable SELECT DISTINCT |
-| `selectCount()` | `COUNT(*)` aliased as `"count"` |
-| `selectCountDistinct()` | `COUNT(DISTINCT root)` aliased as `"count_distinct"` |
-| `selectSum(field)` | `SUM(field)` aliased as `"sum_<name>"` |
-| `selectAvg(field)` | `AVG(field)` aliased as `"avg_<name>"` |
-| `selectMax(field)` | `MAX(field)` aliased as `"max_<name>"` |
-| `selectMin(field)` | `MIN(field)` aliased as `"min_<name>"` |
-| `asDto(dtoClass)` | Specify DTO class for constructor projection |
-| `withSoftDeleteFilter()` | Explicitly enable soft delete filter |
-| `withDeepPaginationThreshold(int)` | Set deep pagination warning threshold |
-| `withDeepPaginationLimit(int)` | Set deep pagination hard limit (-1 to disable) |
-| `groupBy(fields...)` | GROUP BY clause |
-| `having(predicate)` | HAVING clause (BiFunction) |
-| `join(field, config)` | INNER JOIN with conditions |
-| `leftJoin(field, config)` | LEFT JOIN with conditions |
-| `orderByAsc(field)` | Order ascending |
-| `orderByDesc(field)` | Order descending |
-| `where(config)` | WHERE conditions via `Consumer<QuerySpec<T>>` |
-| `conditions()` | Access underlying QuerySpec directly |
-| `toTupleQuery(em)` | Build Tuple query (default max results) |
-| `toTupleQuery(em, maxResults)` | Build Tuple query with custom limit |
-| `toDtoQuery(em)` | Build DTO constructor query (requires `asDto()`) |
-| `toDtoQuery(em, maxResults)` | Build DTO query with custom limit |
-| `getResultStream(em)` | Stream Tuple results (must use try-with-resources) |
-| `findPage(em, pageable)` | Paginated Tuple query |
+| `select(fields...)` | Add projection fields (varargs `SFunction`) |
+| `selectAs(field, alias)` | Add projection field with custom column alias |
+| `asDto(dtoClass)` | Set DTO class for constructor projection |
+| `isProjectionMode()` | Returns true if select() fields are configured |
 
-### ProjectionSpec.ProjectionJoinGroup\<E\>
+### QuerySpec Aggregate Helpers (static)
 
-Inner JOIN condition builder for projections. Implements `ConditionBuilder<E>` with all condition methods (eq, ne, like, in, between, isNull, isNotNull, etc.).
+| Method | Description |
+|--------|-------------|
+| `QuerySpec.count()` | `COUNT(*)` aggregate expression |
+| `QuerySpec.countDistinct()` | `COUNT(DISTINCT root)` aggregate expression |
+| `QuerySpec.sum(field)` | `SUM(field)` aggregate expression |
+| `QuerySpec.avg(field)` | `AVG(field)` aggregate expression |
+| `QuerySpec.max(field)` | `MAX(field)` aggregate expression |
+| `QuerySpec.min(field)` | `MIN(field)` aggregate expression |
+
+### MyJpaTemplate Projection Methods
+
+| Method | Description |
+|--------|-------------|
+| `find(entityClass, QuerySpec)` | Execute projection query — returns `List<Tuple>` or `List<Dto>` if `asDto()` set |
+| `projectionPage(entityClass, QuerySpec, Pageable)` | Paginated projection — returns `Page<Tuple>` |
 
 ## MyJpaTemplate
 

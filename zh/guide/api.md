@@ -277,44 +277,34 @@ UPSERT 操作构建器。支持 PostgreSQL、MySQL、Oracle、SQL Server。
 | `buildSql()` | 仅构建 SQL 不执行 |
 | `isStrictMode()` | 返回 true（始终强制） |
 
-## ProjectionSpec\<T\>
+## QuerySpec 投影方法
 
-DTO 投影查询构建器，支持 Tuple 和构造函数 DTO 投影。
+投影查询基于 `QuerySpec` 构建，通过 `MyJpaTemplate` 执行。
 
 | 方法 | 说明 |
 |------|------|
-| `ProjectionSpec(entityClass)` | 构造函数（自动检测 @SoftDelete） |
-| `withDefaults(entityClass)` | 静态工厂（同构造函数） |
-| `select(field)` | 添加字段到 SELECT |
-| `distinct()` | 启用 SELECT DISTINCT |
-| `selectCount()` | `COUNT(*)` 别名为 `"count"` |
-| `selectCountDistinct()` | `COUNT(DISTINCT root)` 别名为 `"count_distinct"` |
-| `selectSum(field)` | `SUM(field)` 别名为 `"sum_<name>"` |
-| `selectAvg(field)` | `AVG(field)` 别名为 `"avg_<name>"` |
-| `selectMax(field)` | `MAX(field)` 别名为 `"max_<name>"` |
-| `selectMin(field)` | `MIN(field)` 别名为 `"min_<name>"` |
-| `asDto(dtoClass)` | 指定 DTO 类用于构造函数投影 |
-| `withSoftDeleteFilter()` | 显式启用软删除过滤 |
-| `withDeepPaginationThreshold(int)` | 设置深度分页警告阈值 |
-| `withDeepPaginationLimit(int)` | 设置深度分页硬限制（-1 禁用） |
-| `groupBy(fields...)` | GROUP BY 子句 |
-| `having(predicate)` | HAVING 子句（BiFunction） |
-| `join(field, config)` | INNER JOIN 带条件 |
-| `leftJoin(field, config)` | LEFT JOIN 带条件 |
-| `orderByAsc(field)` | 升序排列 |
-| `orderByDesc(field)` | 降序排列 |
-| `where(config)` | 通过 `Consumer<QuerySpec<T>>` 添加 WHERE 条件 |
-| `conditions()` | 直接访问底层 QuerySpec |
-| `toTupleQuery(em)` | 构建 Tuple 查询（默认最大结果数） |
-| `toTupleQuery(em, maxResults)` | 构建 Tuple 查询指定最大结果数 |
-| `toDtoQuery(em)` | 构建 DTO 构造函数查询（需要先调用 `asDto()`） |
-| `toDtoQuery(em, maxResults)` | 构建 DTO 查询指定最大结果数 |
-| `getResultStream(em)` | 流式 Tuple 结果（必须使用 try-with-resources） |
-| `findPage(em, pageable)` | 分页 Tuple 查询 |
+| `select(fields...)` | 添加投影字段（varargs `SFunction`） |
+| `selectAs(field, alias)` | 添加投影字段并指定自定义列别名 |
+| `asDto(dtoClass)` | 设置 DTO 类用于构造函数投影 |
+| `isProjectionMode()` | 是否已配置 select() 字段 |
 
-### ProjectionSpec.ProjectionJoinGroup\<E\>
+### QuerySpec 聚合辅助方法（静态）
 
-投影查询中的 JOIN 条件构建器。实现 `ConditionBuilder<E>`，包含所有条件方法（eq, ne, like, in, between, isNull, isNotNull 等）。
+| 方法 | 说明 |
+|------|------|
+| `QuerySpec.count()` | `COUNT(*)` 聚合表达式 |
+| `QuerySpec.countDistinct()` | `COUNT(DISTINCT root)` 聚合表达式 |
+| `QuerySpec.sum(field)` | `SUM(field)` 聚合表达式 |
+| `QuerySpec.avg(field)` | `AVG(field)` 聚合表达式 |
+| `QuerySpec.max(field)` | `MAX(field)` 聚合表达式 |
+| `QuerySpec.min(field)` | `MIN(field)` 聚合表达式 |
+
+### MyJpaTemplate 投影方法
+
+| 方法 | 说明 |
+|------|------|
+| `find(entityClass, QuerySpec)` | 执行投影查询 — 返回 `List<Tuple>` 或设置了 `asDto()` 时返回 `List<Dto>` |
+| `projectionPage(entityClass, QuerySpec, Pageable)` | 分页投影 — 返回 `Page<Tuple>` |
 
 ## MyJpaTemplate
 

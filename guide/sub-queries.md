@@ -14,6 +14,12 @@ List<Customer> customers = customerRepository.findAll(
 );
 ```
 
+Generated SQL:
+```sql
+SELECT * FROM customers c
+WHERE EXISTS (SELECT 1 FROM orders o WHERE o.status = 'PAID')
+```
+
 ## NOT EXISTS
 
 ```java
@@ -24,6 +30,12 @@ List<Customer> customers = customerRepository.findAll(
             .eq(Order::getStatus, "PAID"))
         .toSpecification()
 );
+```
+
+Generated SQL:
+```sql
+SELECT * FROM customers c
+WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.status = 'PAID')
 ```
 
 ## Correlated Subqueries
@@ -42,6 +54,15 @@ List<Customer> customers = customerRepository.findAll(
 );
 ```
 
+Generated SQL:
+```sql
+SELECT * FROM customers c
+WHERE EXISTS (
+    SELECT 1 FROM orders o
+    WHERE o.customer_id = c.id AND o.amount > 1000
+)
+```
+
 ## correlatedEq Shortcut
 
 Shortcut for common correlation patterns:
@@ -56,6 +77,15 @@ List<Customer> customers = customerRepository.findAll(
 );
 ```
 
+Generated SQL:
+```sql
+SELECT * FROM customers c
+WHERE EXISTS (
+    SELECT 1 FROM orders o
+    WHERE o.customer_id = c.id AND o.amount > 1000
+)
+```
+
 ## Subquery Conditions
 
 All QuerySpec conditions are available in subqueries:
@@ -66,8 +96,20 @@ new QuerySpec<Customer>()
         .eq(Order::getStatus, "PAID")
         .gt(Order::getAmount, 100)
         .between(Order::getCreatedAt, startDate, endDate)
-        .like(Order::getRemark, "%urgent%"))
+        .like(Order::getRemark, "urgent"))
     .toSpecification()
+```
+
+Generated SQL:
+```sql
+SELECT * FROM customers c
+WHERE EXISTS (
+    SELECT 1 FROM orders o
+    WHERE o.status = 'PAID'
+      AND o.amount > 100
+      AND o.created_at BETWEEN ? AND ?
+      AND o.remark LIKE '%urgent%'
+)
 ```
 
 ## Select Clause
@@ -82,6 +124,12 @@ new QuerySpec<Customer>()
     .toSpecification()
 ```
 
+Generated SQL:
+```sql
+SELECT * FROM customers c
+WHERE EXISTS (SELECT o.id FROM orders o WHERE o.status = 'PAID')
+```
+
 ## Raw Predicate in Subqueries
 
 For complex correlation conditions:
@@ -94,4 +142,13 @@ new QuerySpec<Customer>()
             cb.greaterThan(root.get("amount"), 1000)
         )))
     .toSpecification()
+```
+
+Generated SQL:
+```sql
+SELECT * FROM customers c
+WHERE EXISTS (
+    SELECT 1 FROM orders o
+    WHERE o.customer_id = ? AND o.amount > 1000
+)
 ```

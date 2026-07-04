@@ -39,11 +39,24 @@ public class User {
 // 写入时自动加密
 user.setPhone("13812341234");
 userRepository.save(user);
-// 数据库存储: "v1:Base64编码的密文"
+```
 
+生成的 SQL：
+```sql
+INSERT INTO users (phone, id_card) VALUES (?, ?)
+-- phone 值: 'v1:Base64编码的密文'
+```
+
+```java
 // 读取时自动解密
 User found = userRepository.findById(id).orElseThrow();
 String phone = found.getPhone();  // → "13812341234"
+```
+
+生成的 SQL：
+```sql
+SELECT * FROM users WHERE id = ?
+-- phone 列包含加密值，由 EncryptConverter 自动解密
 ```
 
 ## 加密算法

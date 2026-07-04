@@ -20,10 +20,10 @@ export default defineConfig({
           { text: 'Guide', link: '/guide/getting-started' },
           { text: 'API', link: '/guide/api' },
           {
-            text: 'v1.3.0',
+            text: 'v1.3.1',
             items: [
-              { text: 'v1.3.0 (latest)', link: '/guide/what-is-myjpa-plus' },
-              { text: 'v1.2.0', link: '/v1.2.0/guide/what-is-myjpa-plus' },
+              { text: 'v1.3.1 (latest)', link: '/guide/what-is-myjpa-plus' },
+              { text: 'v1.3.0', link: '/v1.3.0/guide/what-is-myjpa-plus' },
               { text: 'Changelog', link: '/guide/changelog' },
               { text: 'Contributing', link: '/guide/contributing' }
             ]
@@ -59,7 +59,10 @@ export default defineConfig({
               text: 'Reference',
               items: [
                 { text: 'API Reference', link: '/guide/api' },
-                { text: 'Configuration', link: '/guide/configuration' }
+                { text: 'Configuration', link: '/guide/configuration' },
+                { text: 'Architecture', link: '/guide/architecture' },
+                { text: 'Database Compatibility', link: '/guide/database-compatibility' },
+                { text: 'FAQ', link: '/guide/faq' }
               ]
             }
           ]
@@ -83,10 +86,10 @@ export default defineConfig({
           { text: '指南', link: '/zh/guide/getting-started' },
           { text: 'API', link: '/zh/guide/api' },
           {
-            text: 'v1.3.0',
+            text: 'v1.3.1',
             items: [
-              { text: 'v1.3.0 (最新)', link: '/zh/guide/what-is-myjpa-plus' },
-              { text: 'v1.2.0', link: '/zh/v1.2.0/guide/what-is-myjpa-plus' },
+              { text: 'v1.3.1 (最新)', link: '/zh/guide/what-is-myjpa-plus' },
+              { text: 'v1.3.0', link: '/v1.3.0/zh/guide/what-is-myjpa-plus' },
               { text: '更新日志', link: '/zh/guide/changelog' },
               { text: '贡献指南', link: '/zh/guide/contributing' }
             ]
@@ -122,7 +125,10 @@ export default defineConfig({
               text: '参考',
               items: [
                 { text: 'API 参考', link: '/zh/guide/api' },
-                { text: '配置', link: '/zh/guide/configuration' }
+                { text: '配置', link: '/zh/guide/configuration' },
+                { text: '架构概览', link: '/zh/guide/architecture' },
+                { text: '数据库兼容性', link: '/zh/guide/database-compatibility' },
+                { text: '常见问题', link: '/zh/guide/faq' }
               ]
             }
           ]

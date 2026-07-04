@@ -25,7 +25,7 @@ MyJpa-Plus provides a clean, type-safe alternative:
 // toSpecification() is optional - QuerySpec implements Specification directly
 QuerySpec<User> spec = new QuerySpec<User>()
     .eq(User::getStatus, "ACTIVE")      // Compile-time checked!
-    .like(User::getName, "%John%")      // No magic strings!
+    .like(User::getName, "John")           // No magic strings! Auto-wraps with %
     .gt(User::getAge, 18);
 
 // Pass directly to findAll()
@@ -136,10 +136,10 @@ QuerySpec<User> spec = QuerySpec.of(s -> s
 - Parameter binding
 - SQL preview for debugging
 
-### Projection Queries (ProjectionSpec)
-- Field selection with type safety
-- Aggregate functions
-- DTO constructor projection
+### Projection Queries
+- QuerySpec.select() / selectAs() / asDto() for field selection
+- Aggregate functions (count/sum/avg/max/min)
+- DTO constructor projection with name-based matching
 - JOIN and pagination support
 
 ### Soft Delete

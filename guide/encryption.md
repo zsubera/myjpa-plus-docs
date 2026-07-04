@@ -39,11 +39,24 @@ public class User {
 // Auto-encrypted on write
 user.setPhone("13812341234");
 userRepository.save(user);
-// Database stores: "v1:Base64-encoded ciphertext"
+```
 
+Generated SQL:
+```sql
+INSERT INTO users (phone, id_card) VALUES (?, ?)
+-- phone value: 'v1:Base64-encoded-ciphertext'
+```
+
+```java
 // Auto-decrypted on read
 User found = userRepository.findById(id).orElseThrow();
 String phone = found.getPhone();  // → "13812341234"
+```
+
+Generated SQL:
+```sql
+SELECT * FROM users WHERE id = ?
+-- phone column contains encrypted value, auto-decrypted by EncryptConverter
 ```
 
 ## Encryption Algorithm
@@ -109,6 +122,18 @@ for (User u : allUsers) {
     }
 }
 userRepository.saveAll(allUsers);
+```
+
+Generated SQL:
+```sql
+-- Step 3: Read old value
+SELECT * FROM users WHERE id = ?
+
+-- Step 4: Batch re-encryption
+SELECT * FROM users
+-- Then for each user:
+UPDATE users SET phone = ? WHERE id = ?
+-- phone value: 'v2:newly-encrypted-ciphertext'
 ```
 
 ## Tuning PBKDF2 Iterations

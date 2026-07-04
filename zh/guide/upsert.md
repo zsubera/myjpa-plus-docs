@@ -37,6 +37,12 @@ int affected = new MergeSpec<>(User.class)
     .execute(em);
 ```
 
+生成的 SQL（PostgreSQL）：
+```sql
+INSERT INTO users (name, email, age) VALUES (?, ?, ?)
+ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, age = EXCLUDED.age
+```
+
 ### 多列唯一键
 
 ```java
@@ -46,6 +52,12 @@ int affected = new MergeSpec<>(Order.class)
     .execute(em);
 ```
 
+生成的 SQL（PostgreSQL）：
+```sql
+INSERT INTO orders (order_no, tenant_id, amount) VALUES (?, ?, ?)
+ON CONFLICT (order_no, tenant_id) DO UPDATE SET amount = EXCLUDED.amount
+```
+
 ### 字符串字段名（动态场景）
 
 ```java
@@ -53,6 +65,12 @@ int affected = new MergeSpec<>(User.class)
     .withEntity(user)
     .onConflict("email", "tenant_id")
     .execute(em);
+```
+
+生成的 SQL（PostgreSQL）：
+```sql
+INSERT INTO users (name, email, tenant_id) VALUES (?, ?, ?)
+ON CONFLICT (email, tenant_id) DO UPDATE SET name = EXCLUDED.name
 ```
 
 ## 选择性更新

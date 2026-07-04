@@ -32,6 +32,12 @@ List<Object[]> results = CteSpec
     .getResultList(em);
 ```
 
+生成的 SQL：
+```sql
+WITH active_users (id, name) AS (SELECT id, name FROM users WHERE active = true)
+SELECT * FROM active_users WHERE name LIKE '%John%'
+```
+
 ### 参数绑定
 
 ```java
@@ -42,6 +48,12 @@ List<Object[]> results = CteSpec
     .select("SELECT * FROM recent_orders WHERE amount > :minAmount")
     .setParameter("minAmount", 100.0)
     .getResultList(em);
+```
+
+生成的 SQL：
+```sql
+WITH recent_orders AS (SELECT * FROM orders WHERE created_at > ?)
+SELECT * FROM recent_orders WHERE amount > ?
 ```
 
 ## 递归 CTE
@@ -104,13 +116,14 @@ Optional<Object[]> result = CteSpec
     .getSingleResult(em);
 ```
 
-### 获取标量值
+### 获取单个结果
 
 ```java
-Long count = CteSpec
+Optional<Object[]> result = CteSpec
     .with("count_query").as("SELECT COUNT(*) as cnt FROM users")
     .select("SELECT cnt FROM count_query")
-    .getScalarResult(em, Long.class);
+    .getSingleResult(em);
+Long count = result.map(row -> ((Number) row[0]).longValue()).orElse(0L);
 ```
 
 ### 流式查询

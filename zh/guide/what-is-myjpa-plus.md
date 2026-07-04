@@ -25,7 +25,7 @@ MyJpa-Plus 提供了简洁、类型安全的替代方案：
 // toSpecification() 是可选的 - QuerySpec 直接实现了 Specification 接口
 QuerySpec<User> spec = new QuerySpec<User>()
     .eq(User::getStatus, "ACTIVE")      // 编译期检查!
-    .like(User::getName, "%John%")      // 无魔法字符串!
+    .like(User::getName, "John")           // 无魔法字符串! 自动添加 % 前后缀
     .gt(User::getAge, 18);
 
 // 直接传递给 findAll()
@@ -136,10 +136,10 @@ QuerySpec<User> spec = QuerySpec.of(s -> s
 - 参数绑定
 - SQL 预览用于调试
 
-### 投影查询 (ProjectionSpec)
-- 类型安全的字段选择
-- 聚合函数
-- DTO 构造函数投影
+### 投影查询
+- QuerySpec.select() / selectAs() / asDto() 字段选择
+- 聚合函数（count/sum/avg/max/min）
+- DTO 构造函数投影，按名称匹配
 - JOIN 和分页支持
 
 ### 软删除

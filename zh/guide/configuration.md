@@ -58,6 +58,10 @@ MyJpa-Plus 通过 Spring Boot 的 `application.yml` 或 `application.properties`
 |------|------|--------|------|
 | `myjpa-plus.auto-repository-base-class` | boolean | `true` | 自动注册 MyJpaRepository 作为仓库基类 |
 
+::: tip 自动配置防御（v1.3.1）
+`RepositoryBaseClassPostProcessor` 对每个仓库初始化包裹 try-catch 块。单个仓库初始化失败不会阻断其余仓库及整个应用的启动。启动日志包含各仓库状态，便于定位问题仓库。
+:::
+
 ## application.yml 示例
 
 ```yaml

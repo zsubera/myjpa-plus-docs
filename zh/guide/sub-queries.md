@@ -14,6 +14,12 @@ List<Customer> customers = customerRepository.findAll(
 );
 ```
 
+生成的 SQL：
+```sql
+SELECT * FROM customers c
+WHERE EXISTS (SELECT 1 FROM orders o WHERE o.status = 'PAID')
+```
+
 ## NOT EXISTS
 
 ```java
@@ -24,6 +30,12 @@ List<Customer> customers = customerRepository.findAll(
             .eq(Order::getStatus, "PAID"))
         .toSpecification()
 );
+```
+
+生成的 SQL：
+```sql
+SELECT * FROM customers c
+WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.status = 'PAID')
 ```
 
 ## 关联子查询
@@ -42,6 +54,15 @@ List<Customer> customers = customerRepository.findAll(
 );
 ```
 
+生成的 SQL：
+```sql
+SELECT * FROM customers c
+WHERE EXISTS (
+    SELECT 1 FROM orders o
+    WHERE o.customer_id = c.id AND o.amount > 1000
+)
+```
+
 ## correlatedEq 快捷方式
 
 常见关联模式的快捷方式：
@@ -56,6 +77,15 @@ List<Customer> customers = customerRepository.findAll(
 );
 ```
 
+生成的 SQL：
+```sql
+SELECT * FROM customers c
+WHERE EXISTS (
+    SELECT 1 FROM orders o
+    WHERE o.customer_id = c.id AND o.amount > 1000
+)
+```
+
 ## 子查询条件
 
 子查询中可使用 QuerySpec 的所有条件：
@@ -66,8 +96,20 @@ new QuerySpec<Customer>()
         .eq(Order::getStatus, "PAID")
         .gt(Order::getAmount, 100)
         .between(Order::getCreatedAt, startDate, endDate)
-        .like(Order::getRemark, "%紧急%"))
+        .like(Order::getRemark, "紧急"))
     .toSpecification()
+```
+
+生成的 SQL：
+```sql
+SELECT * FROM customers c
+WHERE EXISTS (
+    SELECT 1 FROM orders o
+    WHERE o.status = 'PAID'
+      AND o.amount > 100
+      AND o.created_at BETWEEN ? AND ?
+      AND o.remark LIKE '%紧急%'
+)
 ```
 
 ## Select 子句
@@ -82,6 +124,12 @@ new QuerySpec<Customer>()
     .toSpecification()
 ```
 
+生成的 SQL：
+```sql
+SELECT * FROM customers c
+WHERE EXISTS (SELECT o.id FROM orders o WHERE o.status = 'PAID')
+```
+
 ## 子查询中的原始谓词
 
 对于复杂的关联条件：
@@ -94,4 +142,13 @@ new QuerySpec<Customer>()
             cb.greaterThan(root.get("amount"), 1000)
         )))
     .toSpecification()
+```
+
+生成的 SQL：
+```sql
+SELECT * FROM customers c
+WHERE EXISTS (
+    SELECT 1 FROM orders o
+    WHERE o.customer_id = ? AND o.amount > 1000
+)
 ```

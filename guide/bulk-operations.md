@@ -14,6 +14,11 @@ int count = new UpdateSpec<>(User.class)
     .execute(entityManager);
 ```
 
+Generated SQL:
+```sql
+UPDATE users SET status = 'INACTIVE' WHERE last_login_at IS NULL
+```
+
 ### Multi-Field Update
 
 ```java
@@ -22,6 +27,11 @@ int count = new UpdateSpec<>(User.class)
     .set(User::setUpdatedAt, Instant.now())
     .lt(User::getLastLoginAt, cutoffDate)
     .execute(entityManager);
+```
+
+Generated SQL:
+```sql
+UPDATE users SET status = 'ARCHIVED', updated_at = ? WHERE last_login_at < ?
 ```
 
 ### Conditional SET
@@ -36,6 +46,16 @@ int count = new UpdateSpec<>(User.class)
     .execute(entityManager);
 ```
 
+Generated SQL (when `name = "Alice"`):
+```sql
+UPDATE users SET status = 'INACTIVE', name = 'Alice' WHERE status = 'PENDING'
+```
+
+Generated SQL (when `name = null`):
+```sql
+UPDATE users SET status = 'INACTIVE' WHERE status = 'PENDING'
+```
+
 ### Update with OR Conditions
 
 ```java
@@ -47,6 +67,11 @@ int count = new UpdateSpec<>(User.class)
     .execute(entityManager);
 ```
 
+Generated SQL:
+```sql
+UPDATE users SET status = 'INACTIVE' WHERE status = 'BANNED' OR status = 'SUSPENDED'
+```
+
 ### Update with NOT Conditions
 
 ```java
@@ -54,6 +79,11 @@ int count = new UpdateSpec<>(User.class)
     .set(User::setStatus, "INACTIVE")
     .not(n -> n.eq(User::getRole, "ADMIN"))
     .execute(entityManager);
+```
+
+Generated SQL:
+```sql
+UPDATE users SET status = 'INACTIVE' WHERE NOT (role = 'ADMIN')
 ```
 
 ### Transaction Management
@@ -66,6 +96,11 @@ int count = new UpdateSpec<>(User.class)
     .executeInTransaction(entityManager);
 ```
 
+Generated SQL:
+```sql
+UPDATE users SET status = 'INACTIVE' WHERE status = 'PENDING'
+```
+
 ### Limited Update
 
 ```java
@@ -76,6 +111,11 @@ int count = new UpdateSpec<>(User.class)
     .executeLimited(entityManager, 100);
 ```
 
+Generated SQL:
+```sql
+UPDATE users SET status = 'PROCESSED' WHERE status = 'PENDING' LIMIT 100
+```
+
 ### Update All (Unconditional)
 
 ```java
@@ -83,11 +123,11 @@ int count = new UpdateSpec<>(User.class)
 int count = new UpdateSpec<>(User.class)
     .set(User::setStatus, "ARCHIVED")
     .updateAll(entityManager);
+```
 
-// With transaction management
-int count = new UpdateSpec<>(User.class)
-    .set(User::setStatus, "ARCHIVED")
-    .updateAllInTransaction(entityManager);
+Generated SQL:
+```sql
+UPDATE users SET status = 'ARCHIVED'
 ```
 
 ### Expression SET (Atomic Increment/Decrement)
@@ -100,13 +140,27 @@ int count = new UpdateSpec<>(User.class)
     .setAdd(User::getLoginCount, 1)
     .eq(User::getId, userId)
     .execute(entityManager);
+```
 
+Generated SQL:
+```sql
+UPDATE users SET login_count = login_count + 1 WHERE id = ?
+```
+
+```java
 // Decrement stock quantity by 5
 int count = new UpdateSpec<>(Product.class)
     .setSubtract(Product::getStock, 5)
     .gt(Product::getStock, 5)
     .execute(entityManager);
+```
 
+Generated SQL:
+```sql
+UPDATE products SET stock = stock - 5 WHERE stock > 5
+```
+
+```java
 // Combine with other SET operations
 int count = new UpdateSpec<>(User.class)
     .set(User::setStatus, "ACTIVE")
@@ -114,6 +168,11 @@ int count = new UpdateSpec<>(User.class)
     .set(User::setLastLoginAt, Instant.now())
     .eq(User::getId, userId)
     .execute(entityManager);
+```
+
+Generated SQL:
+```sql
+UPDATE users SET status = 'ACTIVE', login_count = login_count + 1, last_login_at = ? WHERE id = ?
 ```
 
 ### Optimistic Lock Version Increment
@@ -128,26 +187,26 @@ int count = new UpdateSpec<>(User.class)
     .execute(entityManager);
 ```
 
+Generated SQL:
+```sql
+UPDATE users SET status = 'INACTIVE', version = version + 1 WHERE id = ? AND version = ?
+```
+
 ### Allow Unconditional Operations
 
 Unconditional `updateAll()` and `deleteAll()` require explicit opt-in to prevent accidental mass updates:
 
 ```java
-// Without allowUnconditional — throws IllegalStateException
-new UpdateSpec<>(User.class)
-    .set(User::setStatus, "ARCHIVED")
-    .updateAll(em); // Error!
-
 // With allowUnconditional — proceeds
 int count = new UpdateSpec<>(User.class)
     .set(User::setStatus, "ARCHIVED")
     .allowUnconditional(true)
-    .updateAll(em); // OK
+    .updateAll(em);
+```
 
-// Same for delete
-int count = new DeleteSpec<>(User.class)
-    .allowUnconditional(true)
-    .deleteAll(em);
+Generated SQL:
+```sql
+UPDATE users SET status = 'ARCHIVED'
 ```
 
 ### Count Before Execute
@@ -160,13 +219,11 @@ UpdateSpec<User> spec = new UpdateSpec<>(User.class)
     .eq(User::getStatus, "ACTIVE");
 
 long estimated = spec.countBeforeExecute(entityManager);
-System.out.println("Will update " + estimated + " rows");
+```
 
-if (estimated > 1000) {
-    throw new RuntimeException("Too many rows to update");
-}
-
-int count = spec.execute(entityManager);
+Count SQL:
+```sql
+SELECT COUNT(*) FROM users WHERE status = 'ACTIVE'
 ```
 
 ### Build CriteriaUpdate Without Executing
@@ -178,6 +235,11 @@ CriteriaUpdate<User> cu = new UpdateSpec<>(User.class)
     .toUpdate(entityManager);
 ```
 
+Generated CriteriaUpdate:
+```sql
+UPDATE users SET status = 'INACTIVE' WHERE status = 'PENDING'
+```
+
 ## DeleteSpec
 
 ### Basic Delete
@@ -186,6 +248,11 @@ CriteriaUpdate<User> cu = new UpdateSpec<>(User.class)
 int count = new DeleteSpec<>(User.class)
     .eq(User::getStatus, "DELETED")
     .execute(entityManager);
+```
+
+Generated SQL:
+```sql
+DELETE FROM users WHERE status = 'DELETED'
 ```
 
 ### Complex Condition Delete
@@ -199,16 +266,22 @@ int count = new DeleteSpec<>(User.class)
     .execute(entityManager);
 ```
 
+Generated SQL:
+```sql
+DELETE FROM users WHERE created_at < ? AND (status = 'INACTIVE' OR status = 'BANNED')
+```
+
 ### Delete All (Unconditional)
 
 ```java
 // Warning: deletes all records!
 int count = new DeleteSpec<>(User.class)
     .deleteAll(entityManager);
+```
 
-// With transaction management
-int count = new DeleteSpec<>(User.class)
-    .deleteAllInTransaction(entityManager);
+Generated SQL:
+```sql
+DELETE FROM users
 ```
 
 ### Limited Delete
@@ -219,12 +292,22 @@ int count = new DeleteSpec<>(User.class)
     .executeLimited(entityManager, 1000);
 ```
 
+Generated SQL:
+```sql
+DELETE FROM users WHERE status = 'EXPIRED' LIMIT 1000
+```
+
 ### Build CriteriaDelete Without Executing
 
 ```java
 CriteriaDelete<User> cd = new DeleteSpec<>(User.class)
     .eq(User::getStatus, "DELETED")
     .toDelete(entityManager);
+```
+
+Generated CriteriaDelete:
+```sql
+DELETE FROM users WHERE status = 'DELETED'
 ```
 
 ## Using MyJpaTemplate
@@ -245,39 +328,33 @@ int count = template.update(User.class)
 int count = template.delete(User.class)
     .eq(User::getStatus, "DELETED")
     .execute(em);
+```
 
-// Batch update with size limit
-int count = template.executeBatch(
-    template.update(User.class)
-        .set(User::setStatus, "PROCESSED")
-        .eq(User::getStatus, "PENDING"),
-    100
-);
+Generated SQL:
+```sql
+-- Update
+UPDATE users SET status = 'INACTIVE' WHERE status = 'PENDING'
 
-// Batch delete with size limit
-int count = template.executeBatch(
-    template.delete(User.class)
-        .eq(User::getStatus, "EXPIRED"),
-    100
-);
+-- Delete
+DELETE FROM users WHERE status = 'DELETED'
 ```
 
 ## Batch Operations with Separate Transactions
 
-For large datasets, process in batches with independent transactions. If one batch fails, previous batches are already committed:
+For large datasets, process in batches with independent transactions:
 
 ```java
-// Batch update — each batch commits independently
 MyJpaTemplate.BatchResult result = template.executeBatchInSeparateTransactions(
     template.update(User.class)
         .set(User::getStatus, "PROCESSED")
         .eq(User::getStatus, "PENDING"),
     500  // batch size
 );
+```
 
-if (!result.isSuccess()) {
-    log.error("Failed at batch {}: {}", result.getFailedBatchIndex(), result.getFailureCause());
-}
+Each batch executes:
+```sql
+UPDATE users SET status = 'PROCESSED' WHERE status = 'PENDING' LIMIT 500
 ```
 
 ### Failure Strategy

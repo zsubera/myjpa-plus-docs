@@ -1,97 +1,112 @@
 # 投影查询
 
-`ProjectionSpec` 提供类型安全的 DTO 投影查询。支持基于 Tuple 和基于构造函数的 DTO 投影，并支持 JOIN。
+投影查询允许你只选择特定字段，而不是加载整个实体。使用 `QuerySpec.select()` 选择字段，通过 `MyJpaTemplate.find()` 执行投影。
 
 ## 基本用法
 
 ### Tuple 投影
 
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName)
-    .select(User::getEmail)
-    .where(q -> q.eq(User::getStatus, "ACTIVE"));
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(User::getName, User::getEmail)
+    .eq(User::getStatus, "ACTIVE");
 
-TypedQuery<Tuple> query = spec.toTupleQuery(entityManager);
-List<Tuple> results = query.getResultList();
+List<Tuple> results = template.find(User.class, spec);
+```
 
-// 访问结果
-for (Tuple tuple : results) {
-    String name = tuple.get(0, String.class);
-    String email = tuple.get(1, String.class);
-}
+生成的 SQL：
+```sql
+SELECT name, email FROM users WHERE status = 'ACTIVE'
 ```
 
 ### DTO 构造函数投影
 
 ```java
-// DTO 类，构造函数参数与选择的字段匹配
-public class UserSummary {
-    private String name;
-    private String email;
-    
-    public UserSummary(String name, String email) {
-        this.name = name;
-        this.email = email;
-    }
-}
+// DTO 类 — 构造函数参数按名称匹配（见"DTO 名称匹配"）
+public record UserSummary(String name, String email) {}
 
-// 构建投影
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName)
-    .select(User::getEmail)
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(User::getName, User::getEmail)
     .asDto(UserSummary.class)
-    .where(q -> q.eq(User::getStatus, "ACTIVE"));
+    .eq(User::getStatus, "ACTIVE");
 
-TypedQuery<UserSummary> query = spec.toDtoQuery(entityManager);
-List<UserSummary> results = query.getResultList();
+List<UserSummary> results = template.find(User.class, spec);
+```
+
+生成的 SQL：
+```sql
+SELECT name, email FROM users WHERE status = 'ACTIVE'
 ```
 
 ## WHERE 条件
 
-使用 `where()` 方法通过 `QuerySpec` 添加条件：
+直接在 `QuerySpec` 上添加条件：
 
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName)
-    .select(User::getAge)
-    .where(q -> q
-        .eq(User::getStatus, "ACTIVE")
-        .gt(User::getAge, 18)
-        .orderByAsc(User::getName));
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(User::getName, User::getAge)
+    .eq(User::getStatus, "ACTIVE")
+    .gt(User::getAge, 18)
+    .orderByAsc(User::getName);
+
+List<Tuple> results = template.find(User.class, spec);
+```
+
+生成的 SQL：
+```sql
+SELECT name, age FROM users WHERE status = 'ACTIVE' AND age > 18 ORDER BY name ASC
 ```
 
 ## JOIN 支持
 
-在投影查询中添加 JOIN：
-
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
+QuerySpec<User> spec = new QuerySpec<User>()
     .select(User::getName)
     .select(Department::getName)  // 来自关联实体的字段
     .join(User::getDepartment, j -> j
         .eq(Department::getActive, true))
-    .where(q -> q.eq(User::getStatus, "ACTIVE"));
+    .eq(User::getStatus, "ACTIVE");
 
-TypedQuery<Tuple> query = spec.toTupleQuery(entityManager);
+List<Tuple> results = template.find(User.class, spec);
+```
+
+生成的 SQL：
+```sql
+SELECT u.name, d.name
+FROM users u
+INNER JOIN departments d ON u.department_id = d.id
+WHERE d.active = true AND u.status = 'ACTIVE'
 ```
 
 ### LEFT JOIN
 
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
+QuerySpec<User> spec = new QuerySpec<User>()
     .select(User::getName)
     .leftJoin(User::getDepartment, j -> j
         .eq(Department::getActive, true))
-    .where(q -> q.eq(User::getStatus, "ACTIVE"));
+    .eq(User::getStatus, "ACTIVE");
+```
+
+生成的 SQL：
+```sql
+SELECT u.name
+FROM users u
+LEFT JOIN departments d ON u.department_id = d.id
+WHERE d.active = true AND u.status = 'ACTIVE'
 ```
 
 ## DISTINCT
 
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
+QuerySpec<User> spec = new QuerySpec<User>()
     .select(User::getDepartment)
     .distinct();
+```
+
+生成的 SQL：
+```sql
+SELECT DISTINCT department FROM users
 ```
 
 ## 聚合函数
@@ -99,51 +114,66 @@ ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
 ### COUNT
 
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .selectCount();
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(QuerySpec.count());
 
-Tuple result = spec.toTupleQuery(entityManager).getSingleResult();
-long count = result.get("count", Long.class);
+List<Tuple> results = template.find(User.class, spec);
+```
+
+生成的 SQL：
+```sql
+SELECT COUNT(*) FROM users
 ```
 
 ### COUNT(DISTINCT)
 
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
+QuerySpec<User> spec = new QuerySpec<User>()
     .select(User::getDepartment)
-    .selectCountDistinct()
+    .select(QuerySpec.countDistinct())
     .groupBy(User::getDepartment);
+```
+
+生成的 SQL：
+```sql
+SELECT department, COUNT(DISTINCT department) FROM users GROUP BY department
 ```
 
 ### SUM、AVG、MAX、MIN
 
 ```java
-ProjectionSpec<Order> spec = new ProjectionSpec<>(Order.class)
+QuerySpec<Order> spec = new QuerySpec<Order>()
     .select(Order::getCustomerId)
-    .selectSum(Order::getAmount)
-    .selectAvg(Order::getAmount)
-    .selectMax(Order::getAmount)
-    .selectMin(Order::getAmount)
+    .select(QuerySpec.sum(Order::getAmount))
+    .select(QuerySpec.avg(Order::getAmount))
+    .select(QuerySpec.max(Order::getAmount))
+    .select(QuerySpec.min(Order::getAmount))
     .groupBy(Order::getCustomerId);
+```
 
-List<Tuple> results = spec.toTupleQuery(entityManager).getResultList();
-for (Tuple tuple : results) {
-    Long customerId = tuple.get("customerId", Long.class);
-    BigDecimal totalAmount = tuple.get("sum_amount", BigDecimal.class);
-    BigDecimal avgAmount = tuple.get("avg_amount", BigDecimal.class);
-}
+生成的 SQL：
+```sql
+SELECT customer_id, SUM(amount), AVG(amount), MAX(amount), MIN(amount)
+FROM orders
+GROUP BY customer_id
 ```
 
 ### GROUP BY 配合 HAVING
 
 ```java
-ProjectionSpec<Order> spec = new ProjectionSpec<>(Order.class)
+QuerySpec<Order> spec = new QuerySpec<Order>()
     .select(Order::getCustomerId)
-    .selectCount()
+    .select(QuerySpec.count())
     .groupBy(Order::getCustomerId)
     .having((root, cb) -> cb.greaterThan(cb.count(root), 5L));
+```
 
-List<Tuple> results = spec.toTupleQuery(entityManager).getResultList();
+生成的 SQL：
+```sql
+SELECT customer_id, COUNT(*)
+FROM orders
+GROUP BY customer_id
+HAVING COUNT(*) > 5
 ```
 
 ### 组合聚合与字段
@@ -151,128 +181,133 @@ List<Tuple> results = spec.toTupleQuery(entityManager).getResultList();
 当混合聚合字段和非聚合字段时，必须在 `groupBy()` 中包含所有非聚合字段：
 
 ```java
-ProjectionSpec<Order> spec = new ProjectionSpec<>(Order.class)
-    .select(Order::getCustomerId)
-    .select(Order::getStatus)
-    .selectCount()
-    .selectSum(Order::getAmount)
+QuerySpec<Order> spec = new QuerySpec<Order>()
+    .select(Order::getCustomerId, Order::getStatus)
+    .select(QuerySpec.count())
+    .select(QuerySpec.sum(Order::getAmount))
     .groupBy(Order::getCustomerId, Order::getStatus)
     .having((root, cb) -> cb.greaterThan(cb.count(root), 3L))
     .orderByDesc(Order::getCustomerId);
 ```
 
-## 排序
+生成的 SQL：
+```sql
+SELECT customer_id, status, COUNT(*), SUM(amount)
+FROM orders
+GROUP BY customer_id, status
+HAVING COUNT(*) > 3
+ORDER BY customer_id DESC
+```
+
+## 自定义列别名
+
+使用 `selectAs()` 覆盖默认列名：
 
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName)
-    .select(User::getCreatedAt)
-    .orderByAsc(User::getName)
-    .orderByDesc(User::getCreatedAt);
+QuerySpec<User> spec = new QuerySpec<User>()
+    .selectAs(User::getName, "fullName")
+    .selectAs(User::getCreatedAt, "joinDate")
+    .eq(User::getStatus, "ACTIVE");
+
+List<Tuple> results = template.find(User.class, spec);
+```
+
+生成的 SQL：
+```sql
+SELECT name AS fullName, created_at AS joinDate FROM users WHERE status = 'ACTIVE'
+```
+
+## DTO 按名称匹配
+
+构造函数参数按**名称**匹配而非按位置。使用 Java record 或编译时添加 `-parameters` 即可自动匹配：
+
+```java
+// Record — 组件名称自动匹配字段名
+public record UserSummary(String name, String email, Integer age) {}
+
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(User::getAge)     // 匹配到 "age"
+    .select(User::getName)    // 匹配到 "name"
+    .select(User::getEmail)   // 匹配到 "email"
+    .asDto(UserSummary.class); // 顺序无所谓！
+
+List<UserSummary> results = template.find(User.class, spec);
+```
+
+生成的 SQL：
+```sql
+SELECT age, name, email FROM users
+```
+
+普通 class 需添加 `-parameters` 编译参数：
+
+```xml
+<plugin>
+    <groupId>org.apache.maven.plugins</groupId>
+    <artifactId>maven-compiler-plugin</artifactId>
+    <configuration>
+        <parameters>true</parameters>
+    </configuration>
+</plugin>
 ```
 
 ## 分页
 
 ```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName)
-    .select(User::getEmail)
-    .where(q -> q.eq(User::getStatus, "ACTIVE"));
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(User::getName, User::getEmail)
+    .eq(User::getStatus, "ACTIVE");
 
-Page<Tuple> page = spec.findPage(entityManager, PageRequest.of(0, 20));
-List<Tuple> content = page.getContent();
-long total = page.getTotalElements();
+Page<Tuple> page = template.projectionPage(User.class, spec, PageRequest.of(0, 20));
 ```
 
-## 流式结果
+生成的 SQL：
+```sql
+-- 统计查询
+SELECT COUNT(*) FROM users WHERE status = 'ACTIVE'
 
-对于大结果集，使用流式处理避免全部加载到内存：
-
-```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName)
-    .select(User::getEmail)
-    .where(q -> q.eq(User::getStatus, "ACTIVE"));
-
-try (Stream<Tuple> stream = spec.getResultStream(entityManager)) {
-    stream.forEach(tuple -> {
-        String name = tuple.get("name", String.class);
-        String email = tuple.get("email", String.class);
-        processUser(name, email);
-    });
-}
+-- 数据查询
+SELECT name, email FROM users WHERE status = 'ACTIVE' LIMIT 20 OFFSET 0
 ```
 
-## 自定义最大返回行数
+## 排序
 
 ```java
-// 限制返回 100 条结果
-TypedQuery<Tuple> query = spec.toTupleQuery(entityManager, 100);
-
-// 不限制（谨慎使用）
-TypedQuery<Tuple> query = spec.toTupleQuery(entityManager, -1);
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(User::getName, User::getCreatedAt)
+    .orderByAsc(User::getName)
+    .orderByDesc(User::getCreatedAt);
 ```
 
-## 深度分页设置
-
-为高偏移量查询配置警告和限制：
-
-```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName)
-    .withDeepPaginationThreshold(50000)   // 偏移量达 5 万时警告
-    .withDeepPaginationLimit(200000)      // 硬限制 20 万
-    .where(q -> q.eq(User::getStatus, "ACTIVE"));
+生成的 SQL：
+```sql
+SELECT name, created_at FROM users ORDER BY name ASC, created_at DESC
 ```
 
 ## 软删除过滤
 
-`ProjectionSpec` 自动检测 `@SoftDelete` 字段并过滤已删除记录。可手动控制：
+使用 `MyJpaTemplate` 时，`@SoftDelete` 实体的软删除过滤自动应用：
 
 ```java
-// 显式启用（@SoftDelete 实体默认启用）
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
+QuerySpec<User> spec = new QuerySpec<User>()
     .select(User::getName)
-    .withSoftDeleteFilter();
+    .eq(User::getStatus, "ACTIVE");
 
-// 软删除自动检测 — 同样过滤已删除记录
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName);
+List<Tuple> results = template.find(User.class, spec);
 ```
 
-## 访问底层 QuerySpec
-
-对于高级用例，直接访问底层 `QuerySpec`：
-
-```java
-ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
-    .select(User::getName);
-
-QuerySpec<User> conditions = spec.conditions();
-conditions.eq(User::getStatus, "ACTIVE");
-conditions.orderByAsc(User::getName);
+生成的 SQL（假设 `@SoftDelete` 在 `deleted` 字段上）：
+```sql
+SELECT name FROM users WHERE status = 'ACTIVE' AND deleted = false
 ```
 
 ## 完整示例
 
 ```java
-public class OrderSummary {
-    private String customerName;
-    private String productName;
-    private BigDecimal amount;
-    private Instant orderDate;
-    
-    public OrderSummary(String customerName, String productName, 
-                        BigDecimal amount, Instant orderDate) {
-        this.customerName = customerName;
-        this.productName = productName;
-        this.amount = amount;
-        this.orderDate = orderDate;
-    }
-}
+public record OrderSummary(String customerName, String productName,
+                            BigDecimal amount, Instant orderDate) {}
 
-// 构建投影查询
-ProjectionSpec<Order> spec = new ProjectionSpec<>(Order.class)
+QuerySpec<Order> spec = new QuerySpec<Order>()
     .select(Customer::getName)
     .select(Product::getName)
     .select(Order::getAmount)
@@ -282,12 +317,22 @@ ProjectionSpec<Order> spec = new ProjectionSpec<>(Order.class)
         .eq(Customer::getCountry, "CN"))
     .join(Order::getProduct, j -> j
         .eq(Product::getCategory, "Electronics"))
-    .where(q -> q
-        .eq(Order::getStatus, "PAID")
-        .between(Order::getCreatedAt, startDate, endDate)
-        .orderByDesc(Order::getCreatedAt));
+    .eq(Order::getStatus, "PAID")
+    .between(Order::getCreatedAt, startDate, endDate)
+    .orderByDesc(Order::getCreatedAt);
 
-// 执行
-TypedQuery<OrderSummary> query = spec.toDtoQuery(entityManager);
-List<OrderSummary> results = query.getResultList();
+List<OrderSummary> results = template.find(Order.class, spec);
+```
+
+生成的 SQL：
+```sql
+SELECT c.name, p.name, o.amount, o.created_at
+FROM orders o
+INNER JOIN customers c ON o.customer_id = c.id
+INNER JOIN products p ON o.product_id = p.id
+WHERE c.country = 'CN'
+  AND p.category = 'Electronics'
+  AND o.status = 'PAID'
+  AND o.created_at BETWEEN ? AND ?
+ORDER BY o.created_at DESC
 ```

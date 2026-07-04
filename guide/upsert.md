@@ -37,6 +37,18 @@ int affected = new MergeSpec<>(User.class)
     .execute(em);
 ```
 
+Generated SQL (PostgreSQL):
+```sql
+INSERT INTO users (name, email, age) VALUES (?, ?, ?)
+ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, age = EXCLUDED.age, status = EXCLUDED.status
+```
+
+Generated SQL (MySQL):
+```sql
+INSERT INTO users (name, email, age, status) VALUES (?, ?, ?, ?)
+ON DUPLICATE KEY UPDATE name = VALUES(name), age = VALUES(age), status = VALUES(status)
+```
+
 ### Composite Unique Key
 
 ```java
@@ -46,6 +58,12 @@ int affected = new MergeSpec<>(Order.class)
     .execute(em);
 ```
 
+Generated SQL (PostgreSQL):
+```sql
+INSERT INTO orders (order_no, tenant_id, amount) VALUES (?, ?, ?)
+ON CONFLICT (order_no, tenant_id) DO UPDATE SET amount = EXCLUDED.amount
+```
+
 ### String Field Names (Dynamic Scenarios)
 
 ```java
@@ -53,6 +71,12 @@ int affected = new MergeSpec<>(User.class)
     .withEntity(user)
     .onConflict("email", "tenant_id")
     .execute(em);
+```
+
+Generated SQL (PostgreSQL):
+```sql
+INSERT INTO users (name, email, tenant_id) VALUES (?, ?, ?)
+ON CONFLICT (email, tenant_id) DO UPDATE SET name = EXCLUDED.name
 ```
 
 ## Selective Update
@@ -82,6 +106,12 @@ int affected = new MergeSpec<>(User.class)
     .withEntity(user)
     .onConflict(User::getEmail)
     .executeInTransaction(em);
+```
+
+Generated SQL (same as basic UPSERT):
+```sql
+INSERT INTO users (name, email, age) VALUES (?, ?, ?)
+ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, age = EXCLUDED.age
 ```
 
 If no active transaction exists, a new one is created automatically.
@@ -115,6 +145,12 @@ int total = new MergeSpec<>(User.class)
     .executeBatch(users, em, 100);  // 100 per batch
 ```
 
+Generated SQL (PostgreSQL, multi-row):
+```sql
+INSERT INTO users (name, email, age) VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?)
+ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, age = EXCLUDED.age
+```
+
 ### Batch with Transaction
 
 ```java
@@ -122,6 +158,8 @@ int total = new MergeSpec<>(User.class)
     .onConflict(User::getEmail)
     .executeBatchInTransaction(users, em);
 ```
+
+Generated SQL (same multi-row format as above)
 
 ### Batch with Separate Transactions
 
@@ -207,6 +245,12 @@ int affected = new MergeSpec<>(User.class)
     .onConflict(User::getEmail)
     .dialect(new PostgresDialect())
     .execute(em);
+```
+
+Generated SQL (PostgreSQL):
+```sql
+INSERT INTO users (name, email, age) VALUES (?, ?, ?)
+ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, age = EXCLUDED.age
 ```
 
 ### Register a Custom Dialect at Startup

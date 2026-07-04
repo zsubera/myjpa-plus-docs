@@ -32,6 +32,12 @@ List<Object[]> results = CteSpec
     .getResultList(em);
 ```
 
+Generated SQL:
+```sql
+WITH active_users (id, name) AS (SELECT id, name FROM users WHERE active = true)
+SELECT * FROM active_users WHERE name LIKE '%John%'
+```
+
 ### Parameter Binding
 
 ```java
@@ -42,6 +48,12 @@ List<Object[]> results = CteSpec
     .select("SELECT * FROM recent_orders WHERE amount > :minAmount")
     .setParameter("minAmount", 100.0)
     .getResultList(em);
+```
+
+Generated SQL:
+```sql
+WITH recent_orders AS (SELECT * FROM orders WHERE created_at > ?)
+SELECT * FROM recent_orders WHERE amount > ?
 ```
 
 ## Recursive CTE
@@ -104,13 +116,14 @@ Optional<Object[]> result = CteSpec
     .getSingleResult(em);
 ```
 
-### Get Scalar Value
+### Get Single Result
 
 ```java
-Long count = CteSpec
+Optional<Object[]> result = CteSpec
     .with("count_query").as("SELECT COUNT(*) as cnt FROM users")
     .select("SELECT cnt FROM count_query")
-    .getScalarResult(em, Long.class);
+    .getSingleResult(em);
+Long count = result.map(row -> ((Number) row[0]).longValue()).orElse(0L);
 ```
 
 ### Streaming Results

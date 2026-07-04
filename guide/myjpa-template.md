@@ -20,13 +20,17 @@ private MyJpaTemplate template;
 List<User> users = template.findAll(User.class, s -> s.eq(User::getStatus, "ACTIVE"));
 Optional<User> user = template.findOne(User.class, s -> s.eq(User::getId, 1L));
 long count = template.count(User.class, s -> s.eq(User::getStatus, "ACTIVE"));
-boolean exists = template.exists(User.class, s -> s.eq(User::getEmail, "john@example.com"));
 ```
 
 ### Find by ID
 
 ```java
 Optional<User> user = template.findById(User.class, userId);
+```
+
+Generated SQL:
+```sql
+SELECT * FROM users WHERE id = ?
 ```
 
 ### Find One
@@ -36,26 +40,47 @@ Optional<User> user = template.findOne(User.class,
     new QuerySpec<User>().eq(User::getEmail, "john@example.com"));
 ```
 
+Generated SQL:
+```sql
+SELECT * FROM users WHERE email = 'john@example.com' LIMIT 1
+```
+
 ### Find All
 
 ```java
 // Using QuerySpec
 List<User> users = template.findAll(User.class, 
     new QuerySpec<User>().eq(User::getStatus, "ACTIVE"));
+```
 
+Generated SQL:
+```sql
+SELECT * FROM users WHERE status = 'ACTIVE' LIMIT 10000
+```
+
+```java
 // Limit results
 List<User> users = template.findAll(User.class, 
     new QuerySpec<User>().eq(User::getStatus, "ACTIVE"), 100);
+```
 
+Generated SQL:
+```sql
+SELECT * FROM users WHERE status = 'ACTIVE' LIMIT 100
+```
+
+```java
 // With EntityGraph
 List<User> users = template.findAll(User.class, 
     new QuerySpec<User>().eq(User::getStatus, "ACTIVE"),
     EntityGraphHelper.forEntity(User.class).add("department"));
+```
 
-// With EntityGraph and limit
-List<User> users = template.findAll(User.class, 
-    new QuerySpec<User>().eq(User::getStatus, "ACTIVE"),
-    EntityGraphHelper.forEntity(User.class).add("department"), 100);
+Generated SQL:
+```sql
+SELECT u.*, d.* FROM users u
+LEFT JOIN departments d ON u.department_id = d.id
+WHERE u.status = 'ACTIVE' LIMIT 10000
 ```
 
 ### Find with Raw Specification
@@ -64,10 +89,11 @@ List<User> users = template.findAll(User.class,
 // Using raw Specification
 List<User> users = template.find(User.class,
     (root, query, cb) -> cb.equal(root.get("status"), "ACTIVE"));
+```
 
-// With limit
-List<User> users = template.find(User.class,
-    (root, query, cb) -> cb.equal(root.get("status"), "ACTIVE"), 100);
+Generated SQL:
+```sql
+SELECT * FROM users WHERE status = 'ACTIVE' LIMIT 10000
 ```
 
 ### Streaming Results
@@ -75,18 +101,15 @@ List<User> users = template.find(User.class,
 For large result sets without memory limits:
 
 ```java
-// Stream all results
-try (Stream<User> stream = template.findAllStream(User.class, 
-    new QuerySpec<User>().eq(User::getStatus, "ACTIVE"))) {
-    stream.forEach(user -> process(user));
-}
-
-// Stream with EntityGraph
-try (Stream<User> stream = template.findAllStream(User.class, 
+// Stream all results — stream lifecycle is managed internally
+template.findAllStream(User.class,
     new QuerySpec<User>().eq(User::getStatus, "ACTIVE"),
-    EntityGraphHelper.forEntity(User.class).add("department"))) {
-    stream.forEach(user -> process(user));
-}
+    stream -> stream.forEach(user -> process(user)));
+```
+
+Generated SQL:
+```sql
+SELECT * FROM users WHERE status = 'ACTIVE'
 ```
 
 ### Pagination
@@ -96,16 +119,27 @@ try (Stream<User> stream = template.findAllStream(User.class,
 Page<User> page = template.findAll(User.class,
     new QuerySpec<User>().eq(User::getStatus, "ACTIVE"),
     PageRequest.of(0, 20, Sort.by("name")));
+```
 
-// With raw Specification
-Page<User> page = template.findPage(User.class,
-    (root, query, cb) -> cb.equal(root.get("status"), "ACTIVE"),
-    PageRequest.of(0, 20));
+Generated SQL:
+```sql
+-- Count query
+SELECT COUNT(*) FROM users WHERE status = 'ACTIVE'
 
+-- Data query
+SELECT * FROM users WHERE status = 'ACTIVE' ORDER BY name ASC LIMIT 20 OFFSET 0
+```
+
+```java
 // Slice — no count query (faster, use when you only need hasNext)
 Slice<User> slice = template.findSlice(User.class,
     (root, query, cb) -> cb.equal(root.get("status"), "ACTIVE"),
     PageRequest.of(0, 20));
+```
+
+Generated SQL:
+```sql
+SELECT * FROM users WHERE status = 'ACTIVE' LIMIT 21 OFFSET 0
 ```
 
 ### Batch by IDs
@@ -115,9 +149,21 @@ Automatically splits large ID lists into IN-clause batches:
 ```java
 // Find by IDs (auto IN-clause splitting for Oracle compatibility)
 List<User> users = template.findAllById(User.class, List.of(1L, 2L, 3L, 1000L));
+```
 
+Generated SQL:
+```sql
+SELECT * FROM users WHERE id IN (1, 2, 3, 1000)
+```
+
+```java
 // Find non-deleted by IDs
 List<User> users = template.findNotDeletedAllById(User.class, List.of(1L, 2L, 3L));
+```
+
+Generated SQL:
+```sql
+SELECT * FROM users WHERE id IN (1, 2, 3) AND deleted = false
 ```
 
 ## Update Operations

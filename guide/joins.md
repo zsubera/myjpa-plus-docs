@@ -14,6 +14,13 @@ List<User> users = userRepository.findAll(
 );
 ```
 
+Generated SQL:
+```sql
+SELECT u.* FROM users u
+INNER JOIN departments d ON u.department_id = d.id
+WHERE d.name = 'Engineering'
+```
+
 ## LEFT JOIN
 
 ```java
@@ -27,6 +34,13 @@ List<User> users = userRepository.findAll(
 );
 ```
 
+Generated SQL:
+```sql
+SELECT u.* FROM users u
+LEFT JOIN departments d ON u.department_id = d.id
+WHERE d.name = 'Engineering' AND d.name IS NULL
+```
+
 ## FETCH JOIN
 
 Eagerly load associations to avoid N+1 queries:
@@ -38,13 +52,27 @@ List<User> users = userRepository.findAll(
         .fetchJoin(User::getDepartment)
         .toSpecification()
 );
+```
 
+Generated SQL:
+```sql
+SELECT u.*, d.* FROM users u
+INNER JOIN departments d ON u.department_id = d.id
+```
+
+```java
 // LEFT FETCH JOIN
 List<User> users = userRepository.findAll(
     new QuerySpec<User>()
         .leftFetchJoin(User::getDepartment)
         .toSpecification()
 );
+```
+
+Generated SQL:
+```sql
+SELECT u.*, d.* FROM users u
+LEFT JOIN departments d ON u.department_id = d.id
 ```
 
 ## Multiple Conditions in JOIN
@@ -57,6 +85,13 @@ List<User> users = userRepository.findAll(
             .gt(Department::getLevel, 3))
         .toSpecification()
 );
+```
+
+Generated SQL:
+```sql
+SELECT u.* FROM users u
+INNER JOIN departments d ON u.department_id = d.id
+WHERE d.name = 'Engineering' AND d.level > 3
 ```
 
 ## JOIN with OR Groups
@@ -72,6 +107,13 @@ List<User> users = userRepository.findAll(
 );
 ```
 
+Generated SQL:
+```sql
+SELECT u.* FROM users u
+INNER JOIN departments d ON u.department_id = d.id
+WHERE d.name = 'Engineering' OR d.name = 'Product'
+```
+
 ## Multiple JOINs
 
 ```java
@@ -83,6 +125,14 @@ List<Order> orders = orderRepository.findAll(
             .eq(Product::getCategory, "Electronics"))
         .toSpecification()
 );
+```
+
+Generated SQL:
+```sql
+SELECT o.* FROM orders o
+INNER JOIN customers c ON o.customer_id = c.id
+INNER JOIN products p ON o.product_id = p.id
+WHERE c.country = 'CN' AND p.category = 'Electronics'
 ```
 
 ## Manual API (Legacy)

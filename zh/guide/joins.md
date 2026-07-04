@@ -14,6 +14,13 @@ List<User> users = userRepository.findAll(
 );
 ```
 
+生成的 SQL：
+```sql
+SELECT u.* FROM users u
+INNER JOIN departments d ON u.department_id = d.id
+WHERE d.name = 'Engineering'
+```
+
 ## LEFT JOIN
 
 ```java
@@ -27,6 +34,13 @@ List<User> users = userRepository.findAll(
 );
 ```
 
+生成的 SQL：
+```sql
+SELECT u.* FROM users u
+LEFT JOIN departments d ON u.department_id = d.id
+WHERE d.name = 'Engineering' AND d.name IS NULL
+```
+
 ## FETCH JOIN
 
 急切加载关联关系，避免 N+1 查询：
@@ -38,13 +52,27 @@ List<User> users = userRepository.findAll(
         .fetchJoin(User::getDepartment)
         .toSpecification()
 );
+```
 
+生成的 SQL：
+```sql
+SELECT u.*, d.* FROM users u
+INNER JOIN departments d ON u.department_id = d.id
+```
+
+```java
 // LEFT FETCH JOIN
 List<User> users = userRepository.findAll(
     new QuerySpec<User>()
         .leftFetchJoin(User::getDepartment)
         .toSpecification()
 );
+```
+
+生成的 SQL：
+```sql
+SELECT u.*, d.* FROM users u
+LEFT JOIN departments d ON u.department_id = d.id
 ```
 
 ## JOIN 中的多条件
@@ -57,6 +85,13 @@ List<User> users = userRepository.findAll(
             .gt(Department::getLevel, 3))
         .toSpecification()
 );
+```
+
+生成的 SQL：
+```sql
+SELECT u.* FROM users u
+INNER JOIN departments d ON u.department_id = d.id
+WHERE d.name = 'Engineering' AND d.level > 3
 ```
 
 ## JOIN 与 OR 分组
@@ -72,6 +107,13 @@ List<User> users = userRepository.findAll(
 );
 ```
 
+生成的 SQL：
+```sql
+SELECT u.* FROM users u
+INNER JOIN departments d ON u.department_id = d.id
+WHERE d.name = 'Engineering' OR d.name = 'Product'
+```
+
 ## 多个 JOIN
 
 ```java
@@ -85,6 +127,14 @@ List<Order> orders = orderRepository.findAll(
 );
 ```
 
+生成的 SQL：
+```sql
+SELECT o.* FROM orders o
+INNER JOIN customers c ON o.customer_id = c.id
+INNER JOIN products p ON o.product_id = p.id
+WHERE c.country = 'CN' AND p.category = 'Electronics'
+```
+
 ## 手动 API（旧式）
 
 如果你更喜欢显式的 begin/end 调用：
@@ -94,6 +144,13 @@ QuerySpec<User> qs = new QuerySpec<>();
 JoinGroup<User, Department> jg = qs.join(User::getDepartment);
 jg.eq(Department::getName, "Engineering");
 jg.endJoin();
+```
+
+生成的 SQL：
+```sql
+SELECT u.* FROM users u
+INNER JOIN departments d ON u.department_id = d.id
+WHERE d.name = 'Engineering'
 ```
 
 ## JOIN 缓存
@@ -106,5 +163,11 @@ new QuerySpec<User>()
     .join(User::getDepartment, j -> j.eq(Department::getName, "Engineering"))
     .join(User::getDepartment, j -> j.gt(Department::getLevel, 3))
     .toSpecification()
-// 生成：SELECT ... FROM user u INNER JOIN department d ON ... WHERE d.name = ? AND d.level > ?
+```
+
+生成的 SQL：
+```sql
+SELECT u.* FROM users u
+INNER JOIN departments d ON u.department_id = d.id
+WHERE d.name = 'Engineering' AND d.level > 3
 ```
