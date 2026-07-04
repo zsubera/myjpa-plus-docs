@@ -24,7 +24,6 @@ export default defineConfig({
             items: [
               { text: 'v1.3.0 (latest)', link: '/guide/what-is-myjpa-plus' },
               { text: 'v1.2.0', link: '/v1.2.0/guide/what-is-myjpa-plus' },
-              { text: '---' },
               { text: 'Changelog', link: '/guide/changelog' },
               { text: 'Contributing', link: '/guide/contributing' }
             ]
@@ -88,7 +87,6 @@ export default defineConfig({
             items: [
               { text: 'v1.3.0 (最新)', link: '/zh/guide/what-is-myjpa-plus' },
               { text: 'v1.2.0', link: '/zh/v1.2.0/guide/what-is-myjpa-plus' },
-              { text: '---' },
               { text: '更新日志', link: '/zh/guide/changelog' },
               { text: '贡献指南', link: '/zh/guide/contributing' }
             ]
