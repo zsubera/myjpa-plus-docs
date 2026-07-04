@@ -14,14 +14,14 @@
 <dependency>
     <groupId>io.github.zsubera</groupId>
     <artifactId>myjpa-plus</artifactId>
-    <version>1.2.0</version>
+    <version>1.3.0</version>
 </dependency>
 ```
 
 Gradle 用户：
 
 ```groovy
-implementation 'io.github.zsubera:myjpa-plus:1.2.0'
+implementation 'io.github.zsubera:myjpa-plus:1.3.0'
 ```
 
 ## 快速上手
@@ -80,6 +80,44 @@ public class UserService {
         );
     }
 }
+```
+
+### 4. Lambda 便捷方法（v1.3.0+）
+
+使用 `MyJpaRepository` 时，可以使用 Consumer 风格的 Lambda 重载，无需手动创建 `QuerySpec`：
+
+```java
+// 直接使用 Consumer<QuerySpec> — 内部自动创建 QuerySpec
+List<User> users = userRepository.findAll(s -> s.eq(User::getStatus, "ACTIVE"));
+
+// 带分页
+Page<User> page = userRepository.findAll(
+    s -> s.eq(User::getStatus, "ACTIVE"),
+    PageRequest.of(0, 20)
+);
+
+// 计数、存在性检查、查询单个
+long count = userRepository.count(s -> s.eq(User::getStatus, "ACTIVE"));
+boolean exists = userRepository.exists(s -> s.eq(User::getEmail, "john@example.com"));
+Optional<User> user = userRepository.findOne(s -> s.eq(User::getId, 1L));
+```
+
+### 5. QuerySpec.of() 工厂方法（v1.3.0+）
+
+使用 `QuerySpec.of()` 一行代码替代 `new QuerySpec<>()`：
+
+```java
+// 之前（2 行）
+QuerySpec<User> spec = new QuerySpec<>();
+spec.eq(User::getStatus, "ACTIVE");
+
+// 之后（1 行）
+QuerySpec<User> spec = QuerySpec.of(s -> s.eq(User::getStatus, "ACTIVE"));
+
+// 跨多个查询复用
+QuerySpec<User> activeFilter = QuerySpec.of(s -> s.eq(User::getStatus, "ACTIVE"));
+repository.findAll(activeFilter);
+repository.count(activeFilter);
 ```
 
 ## 下一步

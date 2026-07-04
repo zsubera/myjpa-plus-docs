@@ -1,28 +1,32 @@
-# 代码生成
+# Code Generation
 
-`EntityCodeGenerator` 提供轻量级代码生成功能，快速生成 JPA 实体和仓库骨架代码。
+`EntityCodeGenerator` provides lightweight code generation for quickly generating JPA entity and repository skeleton code.
 
-## 实体生成
+::: warning Experimental
+`EntityCodeGenerator` is marked as `@apiNote Experimental`. It is a standalone scaffolding tool, not part of the core API.
+:::
 
-### 基本用法
+## Entity Generation
+
+### Basic Usage
 
 ```java
-// 定义列
+// Define columns
 List<EntityCodeGenerator.ColumnDef> columns = List.of(
     new EntityCodeGenerator.ColumnDef("name", "String", false),
     new EntityCodeGenerator.ColumnDef("price", "BigDecimal", true),
     new EntityCodeGenerator.ColumnDef("createdAt", "Instant", false)
 );
 
-// 生成实体源码
+// Generate entity source code
 String entitySrc = EntityCodeGenerator.generateEntity(
-    "products",          // 表名
-    columns,             // 列定义
-    "com.example.domain" // 包名
+    "products",          // table name
+    columns,             // column definitions
+    "com.example.domain" // package name
 );
 ```
 
-生成的代码：
+Generated code:
 ```java
 package com.example.domain;
 
@@ -51,18 +55,18 @@ public class Product {
 }
 ```
 
-## 仓库生成
+## Repository Generation
 
 ```java
 String repoSrc = EntityCodeGenerator.generateRepository(
-    "products",              // 表名
-    columns,                 // 列定义
-    "com.example.domain",    // 实体包名
-    "com.example.repo"       // 仓库包名
+    "products",              // table name
+    columns,                 // column definitions
+    "com.example.domain",    // entity package
+    "com.example.repo"       // repository package
 );
 ```
 
-生成的代码：
+Generated code:
 ```java
 package com.example.repo;
 
@@ -73,15 +77,15 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 }
 ```
 
-## ColumnDef 参数
+## ColumnDef Parameters
 
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| name | String | 列名（Java 属性名） |
-| type | String | Java 类型（如 "String", "Integer", "BigDecimal"） |
-| nullable | boolean | 是否可为 null |
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| name | String | Column name (Java property name) |
+| type | String | Java type (e.g., "String", "Integer", "BigDecimal") |
+| nullable | boolean | Whether the column is nullable |
 
-## 支持的类型
+## Supported Types
 
 - `String`
 - `Integer` / `int`
@@ -92,9 +96,9 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 - `LocalDateTime`
 - `Date`
 
-## 使用场景
+## Use Cases
 
-- 快速搭建新项目实体骨架
-- 根据数据库表结构生成实体类
-- 批量生成多个实体类
-- 代码审查和模板参考
+- Quickly scaffold new project entities
+- Generate entity classes from database table structures
+- Batch generate multiple entity classes
+- Code review and template reference

@@ -14,24 +14,36 @@ hero:
       link: https://github.com/zsubera/myjpa-plus
 
 features:
-  - icon: 🔒
-    title: Lambda Type Safety
-    details: Use method references like Entity::getField instead of hardcoded field name strings. Catch errors at compile time, not runtime.
-  - icon: ⛓️
-    title: Fluent API
-    details: Chainable AND/OR condition combinations with clean, readable syntax. No more begin/end boilerplate.
-  - icon: 🔗
-    title: JOIN Support
-    details: Inner/Left joins with nested conditions, sub-joins, and join caching. Consumer-based API auto-closes groups.
   - icon: 🔍
-    title: EXISTS Subqueries
-    details: Correlated subqueries with type-safe conditions. Full support for EXISTS and NOT EXISTS.
-  - icon: 🧩
-    title: OR/NOT Groups
-    details: Arbitrarily nested OR groups within AND groups and vice versa. NOT condition groups for negation.
-  - icon: 🛡️
-    title: Null Safe
-    details: eq(field, null) automatically becomes IS NULL. All lambda parameters are null-checked with clear error messages.
+    title: Type-Safe Queries
+    details: Lambda-based QuerySpec with eq/ne/gt/lt/like/in/between. Catch field name errors at compile time.
+  - icon: ⚡
+    title: Bulk Operations
+    details: Type-safe UPDATE/DELETE with row limits, batch execution, and conditional SET clauses.
+  - icon: 🔀
+    title: UPSERT / MERGE
+    details: INSERT ... ON CONFLICT for PostgreSQL, MySQL, Oracle, SQL Server. Multi-row batch optimization.
+  - icon: 📊
+    title: Projections & Aggregates
+    details: DTO constructor projection, Tuple queries, GROUP BY/HAVING, and standalone aggregate functions.
+  - icon: 🌳
+    title: CTE Support
+    details: Non-recursive and recursive Common Table Expressions with parameterized queries.
+  - icon: 🔐
+    title: Encryption & Masking
+    details: AES-GCM field encryption via @Encrypt. Phone/email/ID masking via @Mask.
+  - icon: 🗑️
+    title: Soft Delete
+    details: Boolean, Enum, Integer, String soft delete types. Auto-filtering, bulk executor, virtual thread support.
+  - icon: 🔄
+    title: Optimistic Lock Retry
+    details: "@RetryOnOptimisticLock with exponential backoff. Automatic retry on OptimisticLockException."
+  - icon: 📈
+    title: Slow Query Monitoring
+    details: DataSource proxy for automatic slow SQL detection. Configurable threshold.
+  - icon: 🔌
+    title: Pluggable Cache
+    details: CacheAdapter SPI for Redis/Caffeine/Hazelcast. Query result caching with TTL and prefix eviction.
 ---
 
 ## Quick Example
@@ -69,7 +81,7 @@ List<Order> orders = orderRepository.findAll(
 <dependency>
     <groupId>io.github.zsubera</groupId>
     <artifactId>myjpa-plus</artifactId>
-    <version>1.2.0</version>
+    <version>1.3.0</version>
 </dependency>
 ```
 

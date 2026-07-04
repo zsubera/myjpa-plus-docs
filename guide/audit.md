@@ -1,10 +1,10 @@
-# 审计注解
+# Audit Annotations
 
-MyJpa-Plus 提供审计注解，自动填充实体的创建/更新时间和用户信息。
+MyJpa-Plus provides audit annotations that automatically populate entity creation/update timestamps and user information.
 
-## 基本用法
+## Basic Usage
 
-### 1. 定义审计字段
+### 1. Define Audit Fields
 
 ```java
 @Entity
@@ -30,7 +30,7 @@ public class Order {
 }
 ```
 
-### 2. 实现 AuditUserProvider
+### 2. Implement AuditUserProvider
 
 ```java
 @Component
@@ -42,15 +42,15 @@ public class SecurityAuditUserProvider implements AuditUserProvider {
 }
 ```
 
-## 支持的注解
+## Supported Annotations
 
 ### @CreatedAt
 
-自动填充创建时间，支持类型：
+Automatically populates creation timestamp. Supported types:
 - `Instant`
 - `LocalDateTime`
 - `Date`
-- `Long`（epoch millis）
+- `Long` (epoch millis)
 
 ```java
 @CreatedAt
@@ -59,7 +59,7 @@ private Instant createdAt;
 
 ### @UpdatedAt
 
-自动填充更新时间，支持类型同上。
+Automatically populates update timestamp. Same supported types as above.
 
 ```java
 @UpdatedAt
@@ -68,7 +68,7 @@ private Instant updatedAt;
 
 ### @CreatedBy
 
-自动填充创建用户，必须为 `String` 类型。
+Automatically populates the creating user. Must be `String` type.
 
 ```java
 @CreatedBy
@@ -77,16 +77,16 @@ private String createdBy;
 
 ### @UpdatedBy
 
-自动填充更新用户，必须为 `String` 类型。
+Automatically populates the updating user. Must be `String` type.
 
 ```java
 @UpdatedBy
 private String updatedBy;
 ```
 
-## 配置
+## Configuration
 
-### 时区设置
+### Timezone Setting
 
 ```java
 @Configuration
@@ -99,19 +99,19 @@ public class AuditConfig {
 }
 ```
 
-### 自动配置
+### Auto-Configuration
 
-Spring Boot 自动配置会自动注册 `AuditEntityListener`，无需手动配置。
+Spring Boot auto-configuration automatically registers `AuditEntityListener`, no manual configuration needed.
 
-## 工作原理
+## How It Works
 
-1. `AuditEntityListener` 通过 `@PrePersist` 和 `@PreUpdate` 回调自动填充字段
-2. `AuditUserProvider` 接口提供当前用户信息
-3. 字段类型和注解在启动时校验，不支持的类型会抛出异常
+1. `AuditEntityListener` auto-populates fields via `@PrePersist` and `@PreUpdate` callbacks
+2. `AuditUserProvider` interface provides current user information
+3. Field types and annotations are validated at startup; unsupported types throw exceptions
 
-## 注意事项
+## Notes
 
-- `@CreatedBy` 和 `@UpdatedBy` 必须是 `String` 类型
-- `@CreatedAt` 和 `@UpdatedAt` 必须是支持的时间类型
-- 实现类需要注册为 Spring Bean
-- 审计字段会在每次持久化/更新时自动填充
+- `@CreatedBy` and `@UpdatedBy` must be `String` type
+- `@CreatedAt` and `@UpdatedAt` must be supported time types
+- Implementations must be registered as Spring Beans
+- Audit fields are automatically populated on every persist/update

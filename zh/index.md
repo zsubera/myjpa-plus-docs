@@ -14,24 +14,36 @@ hero:
       link: https://github.com/zsubera/myjpa-plus
 
 features:
-  - icon: 🔒
-    title: Lambda 类型安全
-    details: 使用方法引用（Entity::getField）替代硬编码字段名字符串，编译期捕获错误，而非运行时。
-  - icon: ⛓️
-    title: 流式 API
-    details: 可链式调用的 AND/OR 条件组合，语法清晰易读，告别 begin/end 样板代码。
-  - icon: 🔗
-    title: JOIN 支持
-    details: 内连接/左连接，支持嵌套条件、子连接和连接缓存。Consumer 模式自动关闭分组。
   - icon: 🔍
-    title: EXISTS 子查询
-    details: 关联子查询，支持类型安全条件。完整支持 EXISTS 和 NOT EXISTS。
-  - icon: 🧩
-    title: OR/NOT 分组
-    details: 可在 AND 分组内任意嵌套 OR 分组，反之亦然。NOT 条件组用于取反。
-  - icon: 🛡️
-    title: Null 安全
-    details: eq(field, null) 自动转为 IS NULL。所有 Lambda 参数均进行 null 检查，错误信息清晰。
+    title: 类型安全查询
+    details: 基于 Lambda 的 QuerySpec，支持 eq/ne/gt/lt/like/in/between。编译期捕获字段名错误。
+  - icon: ⚡
+    title: 批量操作
+    details: 类型安全的 UPDATE/DELETE，支持行数限制、批量执行和条件 SET 子句。
+  - icon: 🔀
+    title: UPSERT / MERGE
+    details: PostgreSQL、MySQL、Oracle、SQL Server 的 INSERT ... ON CONFLICT。多行批量优化。
+  - icon: 📊
+    title: 投影与聚合
+    details: DTO 构造函数投影、Tuple 查询、GROUP BY/HAVING 和独立聚合函数。
+  - icon: 🌳
+    title: CTE 支持
+    details: 非递归和递归公共表表达式，支持参数化查询。
+  - icon: 🔐
+    title: 加密与脱敏
+    details: 通过 @Encrypt 实现 AES-GCM 字段加密。通过 @Mask 实现手机号/邮箱/身份证脱敏。
+  - icon: 🗑️
+    title: 软删除
+    details: Boolean、Enum、Integer、String 软删除类型。自动过滤、批量执行器、虚拟线程支持。
+  - icon: 🔄
+    title: 乐观锁重试
+    details: "@RetryOnOptimisticLock 指数退避。OptimisticLockException 自动重试。"
+  - icon: 📈
+    title: 慢查询监控
+    details: DataSource 代理自动检测慢 SQL。可配置阈值。
+  - icon: 🔌
+    title: 可插拔缓存
+    details: CacheAdapter SPI 支持 Redis/Caffeine/Hazelcast。带 TTL 和前驱逐的查询结果缓存。
 ---
 
 ## 快速示例
@@ -69,7 +81,7 @@ List<Order> orders = orderRepository.findAll(
 <dependency>
     <groupId>io.github.zsubera</groupId>
     <artifactId>myjpa-plus</artifactId>
-    <version>1.2.0</version>
+    <version>1.3.0</version>
 </dependency>
 ```
 

@@ -14,14 +14,14 @@ Add the dependency to your `pom.xml`:
 <dependency>
     <groupId>io.github.zsubera</groupId>
     <artifactId>myjpa-plus</artifactId>
-    <version>1.2.0</version>
+    <version>1.3.0</version>
 </dependency>
 ```
 
 Or for Gradle:
 
 ```groovy
-implementation 'io.github.zsubera:myjpa-plus:1.2.0'
+implementation 'io.github.zsubera:myjpa-plus:1.3.0'
 ```
 
 ## Quick Start
@@ -80,6 +80,44 @@ public class UserService {
         );
     }
 }
+```
+
+### 4. Lambda Convenience Methods (v1.3.0+)
+
+With `MyJpaRepository`, you can use Consumer-based Lambda overloads -- no need to create `QuerySpec` manually:
+
+```java
+// Using Consumer<QuerySpec> directly -- QuerySpec created internally
+List<User> users = userRepository.findAll(s -> s.eq(User::getStatus, "ACTIVE"));
+
+// With pagination
+Page<User> page = userRepository.findAll(
+    s -> s.eq(User::getStatus, "ACTIVE"),
+    PageRequest.of(0, 20)
+);
+
+// Count, exists, find one
+long count = userRepository.count(s -> s.eq(User::getStatus, "ACTIVE"));
+boolean exists = userRepository.exists(s -> s.eq(User::getEmail, "john@example.com"));
+Optional<User> user = userRepository.findOne(s -> s.eq(User::getId, 1L));
+```
+
+### 5. QuerySpec.of() Factory (v1.3.0+)
+
+Use `QuerySpec.of()` as a one-liner factory instead of `new QuerySpec<>()`:
+
+```java
+// Before (2 lines)
+QuerySpec<User> spec = new QuerySpec<>();
+spec.eq(User::getStatus, "ACTIVE");
+
+// After (1 line)
+QuerySpec<User> spec = QuerySpec.of(s -> s.eq(User::getStatus, "ACTIVE"));
+
+// Reusable across multiple queries
+QuerySpec<User> activeFilter = QuerySpec.of(s -> s.eq(User::getStatus, "ACTIVE"));
+repository.findAll(activeFilter);
+repository.count(activeFilter);
 ```
 
 ## Next Steps

@@ -85,12 +85,55 @@ export MYJPA_ENCRYPT_KEY_VERSION=v2
 ### 在线密钥轮换
 
 ```java
-// 1. 更新环境变量
-// 2. 调用刷新方法
+// 1. 更新环境变量以添加新密钥版本
+// export MYJPA_ENCRYPT_KEY="v1:old_key,v2:new_key"
+// export MYJPA_ENCRYPT_KEY_VERSION=v2
+
+// 2. 在运行时刷新密钥版本
 EncryptConverter.refreshKeyVersion();
 
-// 3. 重新加密数据
-String reEncrypted = EncryptConverter.reEncrypt(oldEncryptedValue);
+// 3. 使用新密钥重新加密现有数据
+// 读取旧值（使用旧密钥解密）
+User user = userRepository.findById(id).orElseThrow();
+String oldValue = user.getPhone(); // 自动解密
+
+// 使用当前密钥版本重新加密
+String reEncrypted = EncryptConverter.reEncrypt(oldValue);
+
+// 4. 批量重新加密（对所有记录进行密钥轮换）
+List<User> allUsers = userRepository.findAll();
+for (User u : allUsers) {
+    String decrypted = u.getPhone();
+    if (decrypted != null) {
+        u.setPhone(EncryptConverter.reEncrypt(decrypted));
+    }
+}
+userRepository.saveAll(allUsers);
+```
+
+## 调整 PBKDF2 迭代次数
+
+根据安全/性能需求配置密钥派生迭代次数：
+
+```java
+// 增加以提高安全性（更慢的密钥派生）
+EncryptConverter.setPbkdf2Iterations(1_000_000);
+
+// 或通过配置
+// myjpa-plus.query.pbkdf2-iterations=1000000
+```
+
+## 密钥验证
+
+在应用启动时验证加密密钥配置：
+
+```java
+// 检查密钥是否正确配置
+EncryptConverter.validateKeyConfiguration();
+
+// 预热密钥缓存以提高性能
+EncryptConverter.warmUpKeyCache();      // 异步
+EncryptConverter.warmUpKeyCacheSync();  // 同步
 ```
 
 ## 盐值管理
@@ -104,6 +147,10 @@ export MYJPA_ENCRYPT_SALT=your_unique_salt_here
 ### 开发环境
 
 未配置时使用固定的开发盐值，仅限开发使用。
+
+## 虚拟线程兼容性
+
+`EncryptConverter` 自动注册事务清理回调，防止虚拟线程（Java 21+）场景中的 Cipher ThreadLocal 内存泄漏。
 
 ## 安全说明
 

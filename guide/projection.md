@@ -86,6 +86,81 @@ ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
     .where(q -> q.eq(User::getStatus, "ACTIVE"));
 ```
 
+## DISTINCT
+
+```java
+ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
+    .select(User::getDepartment)
+    .distinct();
+```
+
+## Aggregate Functions
+
+### COUNT
+
+```java
+ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
+    .selectCount();
+
+Tuple result = spec.toTupleQuery(entityManager).getSingleResult();
+long count = result.get("count", Long.class);
+```
+
+### COUNT(DISTINCT)
+
+```java
+ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
+    .select(User::getDepartment)
+    .selectCountDistinct()
+    .groupBy(User::getDepartment);
+```
+
+### SUM, AVG, MAX, MIN
+
+```java
+ProjectionSpec<Order> spec = new ProjectionSpec<>(Order.class)
+    .select(Order::getCustomerId)
+    .selectSum(Order::getAmount)
+    .selectAvg(Order::getAmount)
+    .selectMax(Order::getAmount)
+    .selectMin(Order::getAmount)
+    .groupBy(Order::getCustomerId);
+
+List<Tuple> results = spec.toTupleQuery(entityManager).getResultList();
+for (Tuple tuple : results) {
+    Long customerId = tuple.get("customerId", Long.class);
+    BigDecimal totalAmount = tuple.get("sum_amount", BigDecimal.class);
+    BigDecimal avgAmount = tuple.get("avg_amount", BigDecimal.class);
+}
+```
+
+### GROUP BY with HAVING
+
+```java
+ProjectionSpec<Order> spec = new ProjectionSpec<>(Order.class)
+    .select(Order::getCustomerId)
+    .selectCount()
+    .groupBy(Order::getCustomerId)
+    .having((root, cb) -> cb.greaterThan(cb.count(root), 5L));
+
+List<Tuple> results = spec.toTupleQuery(entityManager).getResultList();
+```
+
+### Combined Aggregates with Fields
+
+When mixing aggregate and non-aggregate fields, you must include all non-aggregate fields in `groupBy()`:
+
+```java
+ProjectionSpec<Order> spec = new ProjectionSpec<>(Order.class)
+    .select(Order::getCustomerId)
+    .select(Order::getStatus)
+    .selectCount()
+    .selectSum(Order::getAmount)
+    .groupBy(Order::getCustomerId, Order::getStatus)
+    .having((root, cb) -> cb.greaterThan(cb.count(root), 3L))
+    .orderByDesc(Order::getCustomerId);
+```
+
 ## Sorting
 
 ```java
@@ -107,6 +182,62 @@ ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
 Page<Tuple> page = spec.findPage(entityManager, PageRequest.of(0, 20));
 List<Tuple> content = page.getContent();
 long total = page.getTotalElements();
+```
+
+## Streaming Results
+
+For large result sets, use streaming to avoid loading everything into memory:
+
+```java
+ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
+    .select(User::getName)
+    .select(User::getEmail)
+    .where(q -> q.eq(User::getStatus, "ACTIVE"));
+
+try (Stream<Tuple> stream = spec.getResultStream(entityManager)) {
+    stream.forEach(tuple -> {
+        String name = tuple.get("name", String.class);
+        String email = tuple.get("email", String.class);
+        processUser(name, email);
+    });
+}
+```
+
+## Custom Max Results
+
+```java
+// Limit to 100 results
+TypedQuery<Tuple> query = spec.toTupleQuery(entityManager, 100);
+
+// Unlimited (use with caution)
+TypedQuery<Tuple> query = spec.toTupleQuery(entityManager, -1);
+```
+
+## Deep Pagination Settings
+
+Configure warnings and limits for high-offset queries:
+
+```java
+ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
+    .select(User::getName)
+    .withDeepPaginationThreshold(50000)   // warn at offset 50k
+    .withDeepPaginationLimit(200000)      // hard limit at 200k
+    .where(q -> q.eq(User::getStatus, "ACTIVE"));
+```
+
+## Soft Delete Filter
+
+`ProjectionSpec` automatically detects `@SoftDelete` fields and filters deleted records. You can control this:
+
+```java
+// Explicitly enable (default for @SoftDelete entities)
+ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
+    .select(User::getName)
+    .withSoftDeleteFilter();
+
+// Soft delete is auto-detected — this also filters deleted records
+ProjectionSpec<User> spec = new ProjectionSpec<>(User.class)
+    .select(User::getName);
 ```
 
 ## Accessing Underlying QuerySpec

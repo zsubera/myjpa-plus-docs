@@ -1,21 +1,21 @@
 # UPSERT / MergeSpec
 
-`MergeSpec` 提供类型安全的 UPSERT（INSERT ... ON CONFLICT UPDATE）操作，自动检测数据库方言并生成对应的 SQL。
+`MergeSpec` provides type-safe UPSERT (INSERT ... ON CONFLICT UPDATE) operations, automatically detecting the database dialect and generating corresponding SQL.
 
-## 基本用法
+## Basic Usage
 
 ```java
 @Autowired
 private EntityManager em;
 
-// 基本 UPSERT（冲突时更新所有非冲突列）
+// Basic UPSERT (update all non-conflict columns on conflict)
 int affected = new MergeSpec<>(User.class)
     .withEntity(user)
     .onConflict(User::getEmail)
     .execute(em);
 ```
 
-生成的 SQL：
+Generated SQL:
 ```sql
 -- PostgreSQL
 INSERT INTO users (name, email, status) VALUES (?, ?, ?)
@@ -26,9 +26,9 @@ INSERT INTO users (name, email, status) VALUES (?, ?, ?)
 ON DUPLICATE KEY UPDATE name = VALUES(name), status = VALUES(status)
 ```
 
-## 冲突列指定
+## Conflict Column Specification
 
-### 单列唯一键
+### Single Unique Key
 
 ```java
 int affected = new MergeSpec<>(User.class)
@@ -37,7 +37,7 @@ int affected = new MergeSpec<>(User.class)
     .execute(em);
 ```
 
-### 多列唯一键
+### Composite Unique Key
 
 ```java
 int affected = new MergeSpec<>(Order.class)
@@ -46,7 +46,7 @@ int affected = new MergeSpec<>(Order.class)
     .execute(em);
 ```
 
-### 字符串字段名（动态场景）
+### String Field Names (Dynamic Scenarios)
 
 ```java
 int affected = new MergeSpec<>(User.class)
@@ -55,9 +55,9 @@ int affected = new MergeSpec<>(User.class)
     .execute(em);
 ```
 
-## 选择性更新
+## Selective Update
 
-仅更新指定列，其他列保持不变：
+Only update specified columns, leave others unchanged:
 
 ```java
 int affected = new MergeSpec<>(User.class)
@@ -67,15 +67,15 @@ int affected = new MergeSpec<>(User.class)
     .execute(em);
 ```
 
-生成的 SQL：
+Generated SQL:
 ```sql
 INSERT INTO users (name, email, age) VALUES (?, ?, ?)
 ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, age = EXCLUDED.age
 ```
 
-## 事务管理
+## Transaction Management
 
-### 自动事务（推荐）
+### Auto Transaction (Recommended)
 
 ```java
 int affected = new MergeSpec<>(User.class)
@@ -84,9 +84,9 @@ int affected = new MergeSpec<>(User.class)
     .executeInTransaction(em);
 ```
 
-如果当前没有活动事务，会自动创建新事务。
+If no active transaction exists, a new one is created automatically.
 
-### 手动事务
+### Manual Transaction
 
 ```java
 EntityTransaction tx = em.getTransaction();
@@ -103,17 +103,64 @@ try {
 }
 ```
 
-## 批量 UPSERT
+## Batch UPSERT
+
+### Basic Batch
 
 ```java
 List<User> users = List.of(user1, user2, user3);
 
 int total = new MergeSpec<>(User.class)
     .onConflict(User::getEmail)
-    .executeBatch(users, em, 100);  // 每批 100 条
+    .executeBatch(users, em, 100);  // 100 per batch
 ```
 
-## 数据库方言
+### Batch with Transaction
+
+```java
+int total = new MergeSpec<>(User.class)
+    .onConflict(User::getEmail)
+    .executeBatchInTransaction(users, em);
+```
+
+### Batch with Separate Transactions
+
+Each batch commits independently — if one batch fails, previous batches are already committed:
+
+```java
+int total = new MergeSpec<>(User.class)
+    .onConflict(User::getEmail)
+    .executeBatchInSeparateTransactions(users, em, 500);
+```
+
+## executeWithCallbacks
+
+Triggers JPA lifecycle callbacks (e.g., `@PrePersist`, `@PostPersist`) before executing the UPSERT:
+
+```java
+int affected = new MergeSpec<>(User.class)
+    .withEntity(user)
+    .onConflict(User::getEmail)
+    .executeWithCallbacks(em);
+```
+
+This first merges the entity into the persistence context (triggering callbacks), flushes, then executes the native UPSERT.
+
+## Multi-Row Batch UPSERT
+
+`executeBatch()` automatically uses multi-row INSERT syntax when the dialect supports it:
+
+```java
+// PostgreSQL/MySQL: INSERT INTO ... VALUES (...), (...) ON CONFLICT ...
+int total = new MergeSpec<>(User.class)
+    .onConflict(User::getEmail)
+    .executeBatch(users, em, 100);
+
+// Check if current dialect supports batch UPSERT
+boolean supported = new MergeSpec<>(User.class).supportsBatchUpsert(em);
+```
+
+## Database Dialects
 
 ### PostgreSQL
 
@@ -129,14 +176,69 @@ INSERT INTO users (name, email) VALUES (?, ?)
 ON DUPLICATE KEY UPDATE name = VALUES(name)
 ```
 
-## 并发安全说明
+### Oracle
 
-UPSERT 在高并发场景下存在竞态条件。建议：
+```sql
+MERGE INTO users tgt
+USING (SELECT ? AS email, ? AS name, ? AS status FROM dual) src
+ON (tgt.email = src.email)
+WHEN MATCHED THEN UPDATE SET tgt.name = src.name, tgt.status = src.status
+WHEN NOT MATCHED THEN INSERT (email, name, status) VALUES (src.email, src.name, src.status)
+```
 
-1. 使用数据库唯一约束保护冲突键
-2. 在 UPSERT 前使用悲观锁
-3. 在应用层使用分布式锁
-4. 捕获唯一约束异常并重试
+### SQL Server
+
+```sql
+MERGE INTO users AS tgt
+USING (SELECT ? AS email, ? AS name, ? AS status) AS src
+ON (tgt.email = src.email)
+WHEN MATCHED THEN UPDATE SET tgt.name = src.name, tgt.status = src.status
+WHEN NOT MATCHED THEN INSERT (email, name, status) VALUES (src.email, src.name, src.status);
+```
+
+## Custom Dialect
+
+### Override Dialect Per Operation
+
+```java
+// Use a specific dialect instead of auto-detection
+int affected = new MergeSpec<>(User.class)
+    .withEntity(user)
+    .onConflict(User::getEmail)
+    .dialect(new PostgresDialect())
+    .execute(em);
+```
+
+### Register a Custom Dialect at Startup
+
+```java
+@Configuration
+public class DialectConfig {
+    @PostConstruct
+    public void registerDialect() {
+        DialectDetector.registerDialect(new MyCustomDialect());
+    }
+}
+```
+
+Remove a dialect at runtime:
+
+```java
+DialectDetector.removeDialect(MyCustomDialect.class);
+```
+
+## Concurrency Safety
+
+UPSERT has race conditions under high concurrency. Recommendations:
+
+1. Use database unique constraints to protect conflict keys
+2. Use pessimistic locks before UPSERT
+3. Use distributed locks at the application layer
+4. Catch unique constraint exceptions and retry
+
+### @RetryOnOptimisticLock
+
+Use the `@RetryOnOptimisticLock` annotation for automatic retry with exponential backoff on `OptimisticLockException`:
 
 ```java
 @RetryOnOptimisticLock(maxRetries = 3, backoffMs = 100)
@@ -147,3 +249,23 @@ public void upsertUser(User user) {
         .executeInTransaction(em);
 }
 ```
+
+**Attributes:**
+
+| Attribute | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `maxRetries` | `int` | `3` | Maximum retry attempts |
+| `backoffMs` | `long` | `100` | Initial backoff in ms (exponential: `backoffMs * 2^attempt`) |
+
+**How it works:**
+
+- On `OptimisticLockException`, the method is retried up to `maxRetries` times
+- Backoff increases exponentially: 100ms → 200ms → 400ms
+- If all retries fail, the original exception is thrown
+- Works with any Spring-managed bean method (not just UPSERT)
+
+**Use cases:**
+
+- UPSERT operations with concurrent access
+- `@Version`-based optimistic locking in `save()` calls
+- Any operation where concurrent modifications may cause conflicts

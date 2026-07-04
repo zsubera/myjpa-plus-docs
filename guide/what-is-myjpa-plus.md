@@ -45,6 +45,64 @@ userRepository.findAll(spec.toSpecification());
 | OR/NOT groups | Complex nesting | Clean Consumer API |
 | JOIN conditions | Verbose code | Fluent builder |
 
+## Core API Entry Points
+
+### MyJpaRepository\<T, ID\>
+
+Base repository interface extending `JpaRepository` and `JpaSpecificationExecutor`. Provides:
+
+- All standard Spring Data JPA methods
+- Soft-delete auto-filtering on all queries
+- Lambda convenience methods: `findAll(Consumer)`, `findOne(Consumer)`, `count(Consumer)`, `exists(Consumer)`
+- Bulk operations: `update(Consumer)`, `delete(Consumer)`, `merge(Consumer)`
+- `deleteByIdIfExists(ID)` for safe soft-delete by ID
+
+```java
+public interface UserRepository extends MyJpaRepository<User, Long> {
+    // Your custom query methods...
+}
+
+// Lambda style (v1.3.0+)
+List<User> users = userRepository.findAll(s -> s.eq(User::getStatus, "ACTIVE"));
+```
+
+### MyJpaTemplate
+
+Convenience template for operations outside repository context:
+
+- Query methods with max results, EntityGraph, streaming, pagination
+- Batch save: `saveAllBatched()`, `saveAllBatchedPure()`, `saveAllBatchedInSeparateTransactions()`
+- Keyset pagination: `findKeysetPage()` for cursor-based paging
+- UPSERT execution: `execute(MergeSpec)`
+- Configurable cache, deep pagination guard, max results limits
+
+```java
+@Autowired
+private MyJpaTemplate template;
+
+List<User> users = template.findAll(User.class, s -> s.eq(User::getStatus, "ACTIVE"));
+template.saveAllBatched(users, 100);
+```
+
+### QuerySpec\<T\>
+
+Core query builder implementing `Specification<T>`:
+
+- 30+ condition methods: eq, ne, gt, lt, like, in, between, etc.
+- JOIN, LEFT JOIN, FETCH JOIN support
+- OR/NOT groups with nested conditions
+- EXISTS/NOT EXISTS subqueries
+- GROUP BY, HAVING, ORDER BY, DISTINCT
+- `QuerySpec.of(consumer)` one-liner factory
+
+```java
+QuerySpec<User> spec = QuerySpec.of(s -> s
+    .eq(User::getStatus, "ACTIVE")
+    .join(User::getDepartment, j -> j.eq(Department::getName, "Engineering"))
+    .orderByDesc(User::getCreatedAt)
+);
+```
+
 ## Features
 
 ### Query Building (QuerySpec)
@@ -69,7 +127,9 @@ userRepository.findAll(spec.toSpecification());
 - Type-safe UPSERT operations
 - Conflict column specification
 - Selective column updates
-- Multi-database dialect support (PostgreSQL, MySQL)
+- Multi-database dialect support (PostgreSQL, MySQL, Oracle, SQL Server)
+- Multi-row batch UPSERT optimization
+- executeWithCallbacks for JPA lifecycle hooks
 
 ### CTE (Common Table Expression)
 - Non-recursive and recursive CTEs
@@ -83,18 +143,50 @@ userRepository.findAll(spec.toSpecification());
 - JOIN and pagination support
 
 ### Soft Delete
-- @SoftDelete with Boolean, Integer, Enum types
+- @SoftDelete with Boolean, Integer, Enum, String types
+- Deletion timestamp auto-population
 - @IgnoreSoftDelete for temporary override
-- Repository methods for soft-deleted entities
+- SoftDeleteBulkExecutor for batch operations
+- Virtual thread compatibility
 
 ### Field Encryption (@Encrypt)
 - AES-GCM encryption
 - Transparent JPA AttributeConverter
 - Multi-version key rotation
+- Salt management for production
+
+### Field Masking (@Mask)
+- PHONE, EMAIL, ID_CARD, NAME, BANK_CARD, ADDRESS, LICENSE_PLATE
+- Jackson serializer integration
+- JSON output auto-masking
 
 ### Audit Annotations
 - @CreatedAt, @UpdatedAt, @CreatedBy, @UpdatedBy
 - Automatic field population
+- AuditUserProvider SPI for custom user resolution
+
+### Multi-Entity Manager Support
+- Resolve different EntityManagerFactory by entity type
+- Automatic EntityManagerFactory detection
+- EntityClassResolver for multi-datasource scenarios
+
+### Additional Features
+- QuerySpec.of() factory method and Lambda convenience overloads
+- CacheAdapter SPI for pluggable cache backends (Redis/Caffeine)
+- QueryAggregates for standalone aggregate expressions
+- Keyset pagination (cursor-based) for large datasets
+- Deep pagination guard with configurable thresholds
+- Batch save with persist/merge auto-detection
+- @RetryOnOptimisticLock for automatic retry
+- SQL slow query monitoring via DataSource proxy
+- @CodeEnum/@CodeEnumValue for Hibernate 6 enum mapping
+- Virtual thread (Java 21+) compatibility
+- Spring Boot auto-configuration with zero setup
+- EntityGraphHelper for dynamic EntityGraph building
+- PageableHelper for QuerySpec/Pageable sort integration
+- InClauseBuilder for large IN clause auto-batching (Oracle-compatible)
+- FunctionWhitelist for custom function registration
+- IdentifierValidator for SQL injection prevention
 
 ### Code Generation
 - Entity and repository code generation

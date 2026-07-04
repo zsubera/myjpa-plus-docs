@@ -13,6 +13,16 @@ private MyJpaTemplate template;
 
 ## Query Operations
 
+### Lambda Convenience Methods
+
+```java
+// No need to create QuerySpec manually
+List<User> users = template.findAll(User.class, s -> s.eq(User::getStatus, "ACTIVE"));
+Optional<User> user = template.findOne(User.class, s -> s.eq(User::getId, 1L));
+long count = template.count(User.class, s -> s.eq(User::getStatus, "ACTIVE"));
+boolean exists = template.exists(User.class, s -> s.eq(User::getEmail, "john@example.com"));
+```
+
 ### Find by ID
 
 ```java
@@ -91,6 +101,23 @@ Page<User> page = template.findAll(User.class,
 Page<User> page = template.findPage(User.class,
     (root, query, cb) -> cb.equal(root.get("status"), "ACTIVE"),
     PageRequest.of(0, 20));
+
+// Slice — no count query (faster, use when you only need hasNext)
+Slice<User> slice = template.findSlice(User.class,
+    (root, query, cb) -> cb.equal(root.get("status"), "ACTIVE"),
+    PageRequest.of(0, 20));
+```
+
+### Batch by IDs
+
+Automatically splits large ID lists into IN-clause batches:
+
+```java
+// Find by IDs (auto IN-clause splitting for Oracle compatibility)
+List<User> users = template.findAllById(User.class, List.of(1L, 2L, 3L, 1000L));
+
+// Find non-deleted by IDs
+List<User> users = template.findNotDeletedAllById(User.class, List.of(1L, 2L, 3L));
 ```
 
 ## Update Operations
@@ -101,10 +128,16 @@ int count = template.update(User.class)
     .eq(User::getStatus, "PENDING")
     .execute(em);
 
+// Auto-manage transaction
+int count = template.update(User.class)
+    .set(User::setStatus, "INACTIVE")
+    .eq(User::getStatus, "PENDING")
+    .executeInTransaction(em);
+
 // Batch update with size limit
 int count = template.executeBatch(
     template.update(User.class)
-        .set(User::setStatus, "PROCESSED")
+        .set(User::getStatus, "PROCESSED")
         .eq(User::getStatus, "PENDING"),
     100
 );
@@ -125,6 +158,97 @@ int count = template.executeBatch(
 );
 ```
 
+## UPSERT Operations
+
+```java
+// Basic upsert via template
+int count = template.execute(
+    new MergeSpec<>(User.class)
+        .withEntity(user)
+        .onConflict(User::getEmail)
+        .updateOnConflict(User::getName, User::getUpdatedAt)
+);
+
+// Batch upsert
+int count = template.executeBatch(
+    new MergeSpec<>(User.class)
+        .onConflict(User::getEmail),
+    users,
+    100  // batch size
+);
+```
+
+## Batch Operations with Separate Transactions
+
+Process large datasets in batches with independent commits:
+
+```java
+// Update in batches — each batch commits independently
+MyJpaTemplate.BatchResult result = template.executeBatchInSeparateTransactions(
+    template.update(User.class)
+        .set(User::getStatus, "PROCESSED")
+        .eq(User::getStatus, "PENDING"),
+    500
+);
+
+if (!result.isSuccess()) {
+    log.error("Failed at batch {}: {}", result.getFailedBatchIndex(), result.getFailureCause());
+}
+```
+
+### Failure Strategy
+
+```java
+// CONTINUE — process remaining batches even if one fails
+MyJpaTemplate.BatchResult result = template.executeBatchInSeparateTransactions(
+    template.update(User.class)
+        .set(User::getStatus, "DONE")
+        .eq(User::getStatus, "PENDING"),
+    500,
+    MyJpaTemplate.BatchFailureStrategy.CONTINUE
+);
+
+// ABORT — stop on first failure
+MyJpaTemplate.BatchResult result = template.executeBatchInSeparateTransactions(
+    template.delete(LogEntry.class)
+        .lt(LogEntry::getTimestamp, cutoffDate),
+    500,
+    MyJpaTemplate.BatchFailureStrategy.ABORT
+);
+```
+
+### Row-Limited Operations
+
+```java
+// Update with max rows
+int count = template.executeWithMaxRows(
+    template.update(User.class)
+        .set(User::getStatus, "PROCESSED")
+        .eq(User::getStatus, "PENDING"),
+    1000
+);
+
+// Delete with max rows
+int count = template.executeWithMaxRows(
+    template.delete(LogEntry.class)
+        .lt(LogEntry::getTimestamp, cutoffDate),
+    5000
+);
+```
+
+## Batch Save
+
+```java
+// Auto-detect new vs existing (persist vs merge)
+template.saveAllBatched(users, 100);
+
+// Pure persist (no merge, faster for known-new entities)
+template.saveAllBatchedPure(users, 100);
+
+// Per-batch commit (each batch in its own transaction)
+template.saveAllBatchedInSeparateTransactions(users, 100);
+```
+
 ## EntityGraph
 
 ```java
@@ -141,6 +265,63 @@ EntityGraphHelper<User> graph = EntityGraphHelper.forEntity(User.class)
 // Use in query
 List<User> users = template.findAll(User.class,
     new QuerySpec<User>().eq(User::getStatus, "ACTIVE"), graph);
+```
+
+## Keyset Pagination (Cursor-based)
+
+For large datasets, keyset pagination is more efficient than offset-based:
+
+```java
+// First page
+MyJpaTemplateOperations.KeysetPage<User> page = template.findKeysetPage(
+    User.class,
+    (root, cb, cq) -> cb.equal(root.get("status"), "ACTIVE"),
+    Sort.by("id"),
+    20,
+    null  // no cursor for first page
+);
+
+// Next page -- use cursor from previous page
+MyJpaTemplateOperations.KeysetPage<User> nextPage = template.findKeysetPage(
+    User.class,
+    (root, cb, cq) -> cb.equal(root.get("status"), "ACTIVE"),
+    Sort.by("id"),
+    20,
+    page.getLastSortValues()  // cursor from previous page
+);
+
+List<User> users = nextPage.getContent();
+boolean hasNext = nextPage.hasNext();
+```
+
+## Deep Pagination Guard
+
+When using offset-based pagination with large offsets, `MyJpaTemplate` automatically:
+
+1. **Warns** when offset exceeds `deep-pagination-offset-threshold` (default: 100,000)
+2. **Throws** when offset exceeds `deep-pagination-offset-limit` (default: disabled)
+
+```yaml
+myjpa-plus:
+  query:
+    deep-pagination-offset-threshold: 100000  # warn threshold
+    deep-pagination-offset-limit: 1000000     # hard limit (-1 = disabled)
+```
+
+## CacheAdapter
+
+`MyJpaTemplate` uses `CacheAdapter` for query result caching:
+
+```java
+// Check cache stats
+CacheAdapter cache = template.getCacheAdapter();
+log.info("Cache hit rate: {}, size: {}", cache.getHitRate(), cache.size());
+
+// Evict by prefix (e.g., after entity update)
+cache.evictByPrefix("com.example.User:");
+
+// Disable cache for specific template
+template.setCacheAdapter(CacheAdapter.disabled());
 ```
 
 ## Constants

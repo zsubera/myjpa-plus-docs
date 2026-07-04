@@ -285,3 +285,76 @@ LockModeType lockMode = qs.getLockMode();
 // Apply settings to TypedQuery
 qs.applyQuerySettings(typedQuery);
 ```
+
+## Aggregate Functions
+
+### Using QuerySpec
+
+```java
+// GROUP BY with HAVING
+List<Object[]> result = repository.findAll(s ->
+    s.select(User::getStatus, s.count(User::getId))
+     .groupBy(User::getStatus)
+     .having(s.gt(s.count(User::getId), 10))
+);
+
+// Type-safe HAVING methods
+List<Object[]> result = repository.findAll(s ->
+    s.groupBy(User::getDepartment)
+     .havingCount(User::getId, Op.GT, 5)
+     .havingSum(User::getSalary, Op.GT, 100000)
+     .havingAvg(User::getAge, Op.LT, 40)
+);
+```
+
+### Using QueryAggregates (Standalone)
+
+For use in raw predicates or `having(BiFunction)`:
+
+```java
+List<Object[]> result = repository.findAll(s ->
+    s.groupBy(User::getDepartment)
+     .having((root, cb) -> cb.greaterThan(
+         QueryAggregates.count(root, User::getId, cb), 5L))
+);
+```
+
+Available methods: `count()`, `countDistinct()`, `sum()`, `avg()`, `max()`, `min()`
+
+## Database Function Calls
+
+Use `func()` to call database functions in conditions:
+
+```java
+// Call a database function
+List<User> users = repository.findAll(s ->
+    s.func(User::getCreatedAt, "DATE_TRUNC", "year", Op.EQ, targetYear)
+);
+```
+
+## QuerySpec.of() Factory (v1.3.0+)
+
+```java
+// One-liner creation and configuration
+QuerySpec<User> spec = QuerySpec.of(s -> s.eq(User::getStatus, "ACTIVE"));
+
+// Reusable across multiple queries
+QuerySpec<User> filter = QuerySpec.of(s -> s
+    .eq(User::getStatus, "ACTIVE")
+    .ge(User::getAge, 18)
+);
+repository.findAll(filter);
+repository.count(filter);
+```
+
+## Lambda Convenience Methods (v1.3.0+)
+
+With `MyJpaRepository`, use Consumer-based Lambda overloads:
+
+```java
+// No need to create QuerySpec manually
+List<User> users = userRepository.findAll(s -> s.eq(User::getStatus, "ACTIVE"));
+Optional<User> user = userRepository.findOne(s -> s.eq(User::getId, 1L));
+long count = userRepository.count(s -> s.eq(User::getStatus, "ACTIVE"));
+boolean exists = userRepository.exists(s -> s.eq(User::getEmail, "john@example.com"));
+```

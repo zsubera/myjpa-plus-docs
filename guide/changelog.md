@@ -1,83 +1,148 @@
 # Changelog
 
-## [1.0.1] - 2026-05-28
+All notable changes are documented in this file. Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and versioning follows [Semantic Versioning](https://semver.org/).
+
+## [1.3.0] - 2026-07-04
 
 ### Added
-- `@IgnoreSoftDelete` annotation to skip auto soft-delete filtering on methods or types
-- `MyJpaTemplate.findById(Class, Object)` for direct entity lookup by ID
-- `MyJpaTemplate.findOne(Class, QuerySpec)` for single entity queries
-- `EntityGraphHelper.nest(String)` for chaining nested attribute paths
-- `@SoftDelete(deletedValue)` attribute for enum-based soft delete
-- `QuerySpec.having(Function<Path, Predicate>)` convenience overload
-- `ConditionBuilder.where(Function<Root, Predicate>)` overload
-- System property `myjpa-plus.in-clause-max-size` for configuring IN clause batch size
-- System property `myjpa-plus.lambda-cache-size` for configuring LambdaUtils cache size
+- **executeWithCallbacks** — `MergeSpec.executeWithCallbacks(em)` flushes the persistence context to trigger JPA lifecycle callbacks before executing the native UPSERT
+- **Multi-row UPSERT batching** — `MergeSpec.executeBatch()` automatically uses `INSERT INTO ... VALUES (...), (...) ON CONFLICT ...` multi-row syntax (MySQL/PostgreSQL), falls back to row-by-row when dialect doesn't support it
+- **supportsBatchUpsert()** — `DialectStrategy` adds capability detection method; `MergeSpec` uses capability check instead of try-catch
+- **SoftDeleteBulkExecutor** — Extracted bulk soft-delete operations from `SoftDeleteHelper` (~450 lines), Helper reduced to ~740 lines, all public APIs preserved via delegation for backward compatibility
+- **Lambda convenience overloads** — `MyJpaRepository` and `MyJpaTemplate` add `Consumer<QuerySpec<T>>` Lambda overloads, no need for `new QuerySpec<>()`
+  - `findAll(consumer)`, `findOne(consumer)`, `count(consumer)`, `exists(consumer)`
+  - `MyJpaTemplate` adds corresponding Lambda overloads
+- **QuerySpec.of() factory method** — `QuerySpec.of(consumer)` static factory reduces 3-line creation to 1 line
+- **Virtual thread compatibility** — `SoftDeleteContext` and `DefaultMyJpaRepository` fully compatible with Java 21+ virtual threads
+  - `withIgnore(Runnable)` and `withIgnore(Supplier)` convenience methods with automatic lifecycle management
+  - Virtual thread isolation verification tests
+- **UPSERT dialect expansion** — `MergeSpec` supports 4 database dialects
+  - `OracleDialect` (`MERGE INTO ... USING ... ON ... WHEN MATCHED/NOT MATCHED`)
+  - `SqlServerDialect` (`[bracket]` escaping + `MERGE INTO`)
+  - `DialectDetector` registers postgresql, mysql, oracle, sqlserver by default
+  - `removeDialect()` for runtime dialect removal
+- **QueryAggregates** — Standalone `count`/`sum`/`avg`/`max`/`min` aggregate expression factory methods
+- **softDeleteAll row protection** — `SoftDeleteHelper.softDeleteAll()` adds `maxRows` parameter, defaults to 10000 rows max
+- **multiLike nested field validation** — `multiLike(keyword, "address.city")` now validates each segment via `IdentifierValidator.validateColumnName()`
+- **EncryptConverter transaction cleanup** — `registerTransactionCleanupIfNeeded()` auto-registers `afterCompletion` callback to clean Cipher ThreadLocal in virtual thread scenarios
+- **CacheAdapter SPI** — Pluggable cache adapter interface for Redis/Caffeine/Hazelcast
+  - `CacheAdapter` interface, `DisabledCacheAdapter` no-op implementation
+  - `QueryCacheManager` implements `CacheAdapter` (backward compatible)
+  - `MyJpaTemplate` uses `CacheAdapter` internally, adds `setCacheAdapter()`/`getCacheAdapter()`
+  - `CacheInvalidationListener` accepts `CacheAdapter`
+- **Java module system compatibility** — Complete `--add-opens` fix guide
+- **Op.resolve() strategy pattern** — `Op` enum as single source of truth for predicate building
+
+### Optimized
+- **EncryptionKeyManager LRU cache eviction** — Key cache changed from FIFO to LRU strategy with access timestamp tracking
+- **SlowQueryDataSourceProxy lock removal** — Removed `ReentrantLock`, uses `SampledEvictionCache.computeIfAbsent()` atomicity
+- **QuerySpec split** — From 1265 lines to 887 lines + 7 helper classes
+- **Deprecated API cleanup** — Removed 11 deprecated methods
+- **QuerySpec.copy() performance** — Fast path for empty condition trees, skips deep copy
 
 ### Fixed
-- `rawLike` description corrected: auto-escapes wildcards and wraps with `%...%`
+- **EncryptConverter Cipher pool leak** — Cipher objects returned to pool on encryption/decryption failure paths
+- **BulkOperationTemplate iteration count** — Fixed double-increment in failed batch iteration
+- **MergeSpec transaction management** — Extracted `safeRollback()` to unify rollback logic
+- **QuerySpec.copy() deep copy** — Fixed shallow copy causing shared mutable state in nested conditions
+- **NodeResolver LEFT JOIN soft-delete** — Moved soft-delete condition from WHERE to ON clause
+- **EncryptConverter GCM state corruption** — Removed ThreadLocal Cipher cache, create new instance per operation (JDK-8201324)
+- **CacheKeyBuilder recursion protection** — 128-level depth limit prevents StackOverflowError
+- Plus 20+ additional bug fixes (see source CHANGELOG.md for full list)
+
+## [1.2.0] - 2026-06-12
+
+### Added
+- **UPSERT/MERGE support** — `MergeSpec` builder for PostgreSQL `ON CONFLICT`, MySQL `ON DUPLICATE KEY`, H2 `MERGE`
+- **CTE support** — `CteSpec` for non-recursive and recursive Common Table Expressions
+- **SQL slow query monitoring** — `SqlSlowQueryInterceptor` + `myjpa-plus.monitoring` configuration
+- **Field encryption** — `@Encrypt` annotation + `EncryptConverter` (AES/GCM, random IV)
+- **Field masking** — `@Mask` annotation + `MaskSerializer` (Jackson, supports PHONE/EMAIL/ID_CARD/NAME)
+- **Optimistic lock retry** — `@RetryOnOptimisticLock` annotation with exponential backoff
+- **Query result caching** — `QueryCacheManager` with TTL expiration
+- **Database function calls** — `func(field, functionName, comparisonOp, value)` condition method
+- **Case-insensitive string queries** — `eqIgnoreCase`, `neIgnoreCase`, `likeIgnoreCase`
+- **Multi-field LIKE search** — `multiLike(keyword, "field1", "field2")` with string field names
+- **String soft delete** — `@SoftDelete` supports String type deletedValue
+- **EntityManagerFactory support** — Improved `EntityManagerFactory` integration
+
+### Changed
+- **Removed H2 database support** — Tests unified on MySQL
+- **Removed BaseEntity class** — Audit fields via `AuditEntityListener` without base class
+- **Refactored entity field extraction and dialect detection**
+- **Refactored bulk operation template** — Optimized transaction management and memory control
+- **Refactored condition builder interfaces** — Split into 8 sub-interfaces
+
+### Fixed
+- **not() semantics** — Fixed negation condition group semantics
+- **Cache eviction** — Fixed cache eviction in bulk operations
+- **LIKE wildcard escaping** — Fixed `likeSafe()` wildcard escaping
+- **null validation** — Unified condition method null validation
+
+## [1.1.0] - 2026-05-31
+
+### Added
+- **Enum conversion support** — `@CodeEnum` + `@CodeEnumValue` annotations for Hibernate 6 enum mapping
+  - CHAR(1) storage for enum codes (e.g., '0', '1', 'M', 'F')
+  - Supports int, long, String code fields
+  - No converter class needed
+- **multiLike string field names** — `multiLike(keyword, "field1", "field2")` for dynamic field name scenarios
+- **Integer soft delete** — `@SoftDelete(deletedIntValue = 1)` for integer-based delete markers
+- **MyJpaTemplate.count()** — Convenience count method
+- **Aggregate functions API** — New aggregate query functionality
+
+### Changed
+- `ConditionBuilder` adds `notBetween` and `likeIgnoreCase` condition variants
+- `SubQuerySpec` and `AbstractBulkOperationSpec` add more condition convenience methods
+- Optimized `LambdaUtils` cache eviction with CAS operations
+- Optimized `InClauseBuilder` batch processing
+
+### Fixed
+- EXISTS subquery association limitation
+- `MyJpaTemplate.findAllStream` deprecation strategy
+- `DefaultMyJpaRepository.deleteById` for soft-deleted entities
 
 ## [1.0.0] - 2026-05-28
 
 ### Breaking Changes
-- `DeleteSpec` now requires explicit WHERE conditions. Calling `execute()` or `toDelete()` without conditions throws `IllegalStateException`. Use `deleteAll(EntityManager)` for unconditional delete.
-- Fixed `resolveOr()` empty group semantics: now returns `cb.disjunction()` (1=0) instead of `cb.conjunction()` (1=1).
+- `DeleteSpec` now requires explicit WHERE conditions
+- Fixed `resolveOr()` empty group semantics
 
 ### Added
-- `eqIgnoreCase` / `likeIgnoreCase` - Case-insensitive string conditions (UPPER-based)
-- `groupBy(SFunction...)` - GROUP BY clause support
-- `having(BiFunction)` - HAVING clause for aggregate queries
-- `where(BiFunction)` - Raw Predicate injection as escape hatch
-- `not(Consumer)` - Negation condition groups
-- `startsWith` / `endsWith` / `contains` - Convenience LIKE methods
-- `in(Collection)` / `notIn(Collection)` overloads
+- `eqIgnoreCase` / `likeIgnoreCase` — Case-insensitive string conditions
+- `groupBy(SFunction...)` — GROUP BY clause support
+- `having(BiFunction)` — HAVING clause for aggregate queries
+- `not(Consumer)` — Negation condition groups
+- `startsWith` / `endsWith` / `contains` — Convenience LIKE methods
 - Consumer pattern: `or(Consumer)` / `join(field, Consumer)` / `leftJoin(field, Consumer)`
 - Spring Boot auto-configuration
-- Subquery correlation via `correlate(root)`
-- `SubQuerySpec.correlatedEq()` - Typed correlation predicate builder
-- `LambdaUtils` property name cache (by implClass + methodName)
-- Empty value validation for `in` / `notIn`
-- `eq(field, null)` auto-converts to `IS NULL`
-- `endOr()` throws `IllegalStateException` on mismatched calls
-- `DeleteSpec.deleteAll(EntityManager)` / `deleteAllInTransaction(EntityManager)` - Safe unconditional delete
-- SoftDeleteHelper Specification caching (by entityClass)
-- `ProjectionSpec` - DTO projection queries with Tuple and constructor support
-- `BaseEntity` - Abstract base entity with audit fields (id, createdAt, updatedAt)
-- `MyJpaTemplate` streaming API (`findAllStream`)
-- `MyJpaTemplate` batch operations (`executeBatch`)
+- `ProjectionSpec` — DTO projection queries
+- `MyJpaTemplate` streaming API and batch operations
 - Conditional (guarded) methods for all condition builders
-- `QuerySpec.timeout()` / `lockMode()` / `applyQuerySettings()` - Query hint support
-- `EntityGraphHelper` - Dynamic JPA EntityGraph builder
-- `PageableHelper` - QuerySpec/Pageable sort integration
-- `InClauseBuilder` - IN clause auto-batching (Oracle-compatible)
+- `EntityGraphHelper` — Dynamic JPA EntityGraph builder
+- `PageableHelper` — QuerySpec/Pageable sort integration
 
 ### Fixed
 - `SubQuerySpec` conditions no longer override each other
-- `select()` no longer silently overridden by `resolveExists`
-- `resolveSimple` correctly handles Collection values in IN/NOT_IN
-- Race condition in `SoftDeleteHelper.findSoftDeleteField()` (get + computeIfAbsent)
-- `AbstractBulkOperationSpec.executeInTransaction()` now catches `Exception` (not just `RuntimeException`)
+- Race condition in `SoftDeleteHelper.findSoftDeleteField()`
 
-### Changed
-- Eliminated three-layer duplication of condition methods: created `PredicateHelper` shared utility
-- `ConditionNode` → sealed interface; all implementations are `final`
-- SpotBugs threshold set to Medium
-- JaCoCo minimum coverage 60% (excluding autoconfigure)
-- Enabled doclint (`reference,html`)
-- Version upgraded from `0.0.1` to `1.0.0` (semantic versioning)
+## [0.0.2] - 2026-05-28
 
-### Infrastructure
-- GitHub Actions CI (JDK 17/21 matrix + v* tag triggered release deploy)
-- Dependabot automatic dependency updates
-- CODE_OF_CONDUCT, ISSUE_TEMPLATE, PR_TEMPLATE, .editorconfig
+### Added
+- **Batch operation LIMIT support** — `executeWithMaxRows()` for max affected rows
+- **Large IN clause handling** — Auto-split IN clauses exceeding database parameter limits
+- **GroupBy + Having support** — `groupBy(SFunction...)` and `having(BiFunction)`
+- **SubQuerySpec correlation** — `correlate(root)` for subquery correlation
+- **Spring Boot auto-configuration** — Auto-register `MyJpaTemplate` and components
 
-## [0.0.1] - 2026-05-20 (Original jpa-extensions branch)
+## [0.0.1] - 2026-05-26
 
 ### Initial Release
 - Lambda API based type-safe JPA `Specification` builder
 - `QuerySpec<T>`: eq, ne, gt, ge, lt, le, like, notLike, in, notIn, between, isNull, isNotNull
 - JOIN support: `join()`, `leftJoin()` with `JoinGroup`
-- OR groups: `or()` with `OrGroup`, nested `OrJoinGroup` in joins
+- OR groups: `or()` with `OrGroup`
 - EXISTS subqueries with `SubQuerySpec`
 - Multi-field LIKE search via `multiLike`
-- Spring MVC parameter resolvers: `@SearchParam`, `@ListParam`
 - Jackson serializer for Hibernate lazy proxies

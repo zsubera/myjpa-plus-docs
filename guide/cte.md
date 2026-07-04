@@ -1,10 +1,10 @@
-# CTE 公共表表达式
+# CTE (Common Table Expression)
 
-CTE（Common Table Expression，公共表表达式）允许你在查询中定义临时结果集，使复杂查询更易读和维护。`CteSpec` 提供类型安全的 CTE 构建器。
+CTE allows you to define temporary result sets within a query, making complex queries more readable and maintainable. `CteSpec` provides a type-safe CTE builder.
 
-## 非递归 CTE
+## Non-Recursive CTE
 
-### 基本用法
+### Basic Usage
 
 ```java
 List<Object[]> results = CteSpec
@@ -14,13 +14,13 @@ List<Object[]> results = CteSpec
     .getResultList(em);
 ```
 
-生成的 SQL：
+Generated SQL:
 ```sql
 WITH active_users AS (SELECT id, name FROM users WHERE active = true)
 SELECT * FROM active_users
 ```
 
-### 带列定义的 CTE
+### CTE with Column Definitions
 
 ```java
 List<Object[]> results = CteSpec
@@ -32,7 +32,7 @@ List<Object[]> results = CteSpec
     .getResultList(em);
 ```
 
-### 参数绑定
+### Parameter Binding
 
 ```java
 List<Object[]> results = CteSpec
@@ -44,9 +44,9 @@ List<Object[]> results = CteSpec
     .getResultList(em);
 ```
 
-## 递归 CTE
+## Recursive CTE
 
-### 树形查询
+### Tree Query
 
 ```java
 List<Object[]> results = CteSpec
@@ -60,7 +60,7 @@ List<Object[]> results = CteSpec
     .getResultList(em);
 ```
 
-### 员工层级查询
+### Employee Hierarchy Query
 
 ```java
 List<Object[]> results = CteSpec
@@ -74,7 +74,7 @@ List<Object[]> results = CteSpec
     .getResultList(em);
 ```
 
-## 多 CTE 链式
+## Multiple CTE Chaining
 
 ```java
 List<Object[]> results = CteSpec
@@ -84,9 +84,9 @@ List<Object[]> results = CteSpec
     .getResultList(em);
 ```
 
-## 查询结果
+## Query Results
 
-### 获取结果列表
+### Get Result List
 
 ```java
 List<Object[]> results = CteSpec
@@ -95,7 +95,7 @@ List<Object[]> results = CteSpec
     .getResultList(em);
 ```
 
-### 获取单个结果
+### Get Single Result
 
 ```java
 Optional<Object[]> result = CteSpec
@@ -104,7 +104,7 @@ Optional<Object[]> result = CteSpec
     .getSingleResult(em);
 ```
 
-### 获取标量值
+### Get Scalar Value
 
 ```java
 Long count = CteSpec
@@ -113,7 +113,7 @@ Long count = CteSpec
     .getScalarResult(em, Long.class);
 ```
 
-### 流式查询
+### Streaming Results
 
 ```java
 CteSpec.with("tmp").as("SELECT * FROM users")
@@ -123,7 +123,7 @@ CteSpec.with("tmp").as("SELECT * FROM users")
     });
 ```
 
-## 仅构建 SQL（调试用）
+## Build SQL Only (Debugging)
 
 ```java
 String sql = CteSpec
@@ -136,9 +136,9 @@ System.out.println(sql);
 // SELECT * FROM tmp WHERE name LIKE :name
 ```
 
-## 安全说明
+## Security Notes
 
-- CTE 名称和列名会进行安全校验（仅允许字母、数字、下划线）
-- SQL 模板中的 `?N` 占位符会被替换为命名参数
-- 严格模式下检测到危险 SQL 关键字会抛出异常
-- **重要**：CTE SQL 应由开发者编写，不应包含用户输入
+- CTE names and column names are validated (only letters, digits, underscores allowed)
+- `?N` placeholders in SQL templates are replaced with named parameters
+- In strict mode, dangerous SQL keywords throw exceptions
+- **Important**: CTE SQL should be written by developers and should not contain user input

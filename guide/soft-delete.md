@@ -56,6 +56,41 @@ Nullable `Boolean` allows three states:
 - `null` or `false` = not deleted
 - `true` = deleted
 
+### Integer-based
+
+```java
+@Entity
+public class AuditLog {
+    @SoftDelete(deletedIntValue = 1)
+    private Integer deleted = 0;
+}
+```
+
+### String-based
+
+```java
+@Entity
+public class Document {
+    @SoftDelete(deletedStringValue = "ARCHIVED")
+    private String status = "ACTIVE";
+}
+```
+
+### Deletion Timestamp
+
+Automatically set a timestamp when the entity is soft-deleted:
+
+```java
+@Entity
+public class User {
+    @SoftDelete
+    private Boolean deleted;
+
+    @SoftDelete(deletedTimestampField = "deletedAt")
+    private LocalDateTime deletedAt;
+}
+```
+
 ## Using MyJpaRepository
 
 The `MyJpaRepository` interface provides built-in soft delete methods:
@@ -166,4 +201,43 @@ boolean hasSoftDelete = filterBean.hasSoftDeleteField(Product.class);
 
 // Pre-register entity for caching
 filterBean.registerEntity(Product.class);
+```
+
+## SoftDeleteBulkExecutor
+
+For batch soft-delete operations:
+
+```java
+// Soft-delete all entities (with row-count protection)
+int affected = SoftDeleteBulkExecutor.softDeleteAll(em, User.class, true);
+
+// Soft-delete with custom max rows (default: 10000)
+int affected = SoftDeleteBulkExecutor.softDeleteAll(em, User.class, true, 5000);
+
+// Soft-delete by IDs
+int affected = SoftDeleteBulkExecutor.softDeleteByIds(em, User.class, List.of(1L, 2L, 3L));
+```
+
+::: warning Row-Count Protection
+`softDeleteAll()` checks `TransactionSynchronizationManager.isActualTransactionActive()` before executing. Without an active transaction, it throws an exception to prevent un-rollable data loss.
+:::
+
+## SoftDeleteContext (Virtual Thread Support)
+
+For virtual thread (Java 21+) scenarios:
+
+```java
+// Using withIgnore -- recommended for virtual threads
+List<User> allUsers = SoftDeleteContext.withIgnore(() -> repository.findAll());
+
+// Using withIgnore with return value
+Optional<User> user = SoftDeleteContext.withIgnore(() -> repository.findById(id));
+
+// Manual push/pop (legacy approach, still supported)
+SoftDeleteContext.pushIgnore();
+try {
+    List<User> all = repository.findAll();
+} finally {
+    SoftDeleteContext.popIgnore();
+}
 ```

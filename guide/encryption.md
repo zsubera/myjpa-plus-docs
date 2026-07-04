@@ -1,20 +1,20 @@
-# 字段加密
+# Field Encryption
 
-`@Encrypt` 注解配合 `EncryptConverter` 提供透明的 AES-GCM 字段级加密存储。
+`@Encrypt` annotation with `EncryptConverter` provides transparent AES-GCM field-level encryption.
 
-## 快速开始
+## Quick Start
 
-### 1. 设置密钥
+### 1. Set Up Keys
 
 ```bash
-# 环境变量（推荐）
-export MYJPA_ENCRYPT_KEY=0123456789abcdef  # 16/24/32 字节
+# Environment variable (recommended)
+export MYJPA_ENCRYPT_KEY=0123456789abcdef  # 16/24/32 bytes
 
-# 或系统属性
+# Or system property
 java -Dmyjpa.encrypt.key=0123456789abcdef -jar app.jar
 ```
 
-### 2. 标记实体字段
+### 2. Mark Entity Fields
 
 ```java
 @Entity
@@ -33,82 +33,129 @@ public class User {
 }
 ```
 
-### 3. 自动加解密
+### 3. Automatic Encryption/Decryption
 
 ```java
-// 写入时自动加密
+// Auto-encrypted on write
 user.setPhone("13812341234");
 userRepository.save(user);
-// 数据库存储: "v1:Base64编码的密文"
+// Database stores: "v1:Base64-encoded ciphertext"
 
-// 读取时自动解密
+// Auto-decrypted on read
 User found = userRepository.findById(id).orElseThrow();
 String phone = found.getPhone();  // → "13812341234"
 ```
 
-## 加密算法
+## Encryption Algorithm
 
-- **算法**: AES/GCM/NoPadding（认证加密）
-- **IV**: 每次加密使用随机 12 字节 IV
-- **密钥派生**: PBKDF2WithHmacSHA256（600,000 次迭代）
-- **输出格式**: `version:Base64(iv + ciphertext)`
+- **Algorithm**: AES/GCM/NoPadding (authenticated encryption)
+- **IV**: Random 12-byte IV per encryption
+- **Key derivation**: PBKDF2WithHmacSHA256 (600,000 iterations)
+- **Output format**: `version:Base64(iv + ciphertext)`
 
-## 密钥配置
+## Key Configuration
 
-### 环境变量（推荐）
+### Environment Variable (Recommended)
 
 ```bash
 export MYJPA_ENCRYPT_KEY=0123456789abcdef
 ```
 
-### 系统属性
+### System Property
 
 ```bash
 java -Dmyjpa.encrypt.key=0123456789abcdef -jar app.jar
 ```
 
-### 密钥长度要求
+### Key Length Requirements
 
-- 最小 16 字节（UTF-8 编码）
-- 推荐 32 字节
-- 支持 16/24/32 字节
+- Minimum 16 bytes (UTF-8 encoded)
+- Recommended 32 bytes
+- Supports 16/24/32 bytes
 
-## 多版本密钥轮换
+## Multi-Version Key Rotation
 
-支持多版本密钥配置，格式：`v1:key1,v2:key2`
+Supports multi-version key configuration, format: `v1:key1,v2:key2`
 
 ```bash
 export MYJPA_ENCRYPT_KEY="v1:old_key_16_bytes!,v2:new_key_16_bytes!"
 export MYJPA_ENCRYPT_KEY_VERSION=v2
 ```
 
-### 在线密钥轮换
+### Online Key Rotation
 
 ```java
-// 1. 更新环境变量
-// 2. 调用刷新方法
+// 1. Update environment variable to add new key version
+// export MYJPA_ENCRYPT_KEY="v1:old_key,v2:new_key"
+// export MYJPA_ENCRYPT_KEY_VERSION=v2
+
+// 2. Refresh key version in runtime
 EncryptConverter.refreshKeyVersion();
 
-// 3. 重新加密数据
-String reEncrypted = EncryptConverter.reEncrypt(oldEncryptedValue);
+// 3. Re-encrypt existing data with new key
+// Read old value (decrypted with old key)
+User user = userRepository.findById(id).orElseThrow();
+String oldValue = user.getPhone(); // auto-decrypted
+
+// Re-encrypt with current key version
+String reEncrypted = EncryptConverter.reEncrypt(oldValue);
+
+// 4. Batch re-encryption (for key rotation across all records)
+List<User> allUsers = userRepository.findAll();
+for (User u : allUsers) {
+    String decrypted = u.getPhone();
+    if (decrypted != null) {
+        u.setPhone(EncryptConverter.reEncrypt(decrypted));
+    }
+}
+userRepository.saveAll(allUsers);
 ```
 
-## 盐值管理
+## Tuning PBKDF2 Iterations
 
-### 生产环境（必须配置）
+Configure key derivation iterations for your security/performance requirements:
+
+```java
+// Increase for higher security (slower key derivation)
+EncryptConverter.setPbkdf2Iterations(1_000_000);
+
+// Or via configuration
+// myjpa-plus.query.pbkdf2-iterations=1000000
+```
+
+## Key Validation
+
+Validate encryption key configuration at application startup:
+
+```java
+// Check key is properly configured
+EncryptConverter.validateKeyConfiguration();
+
+// Warm up key cache for better performance
+EncryptConverter.warmUpKeyCache();      // async
+EncryptConverter.warmUpKeyCacheSync();  // sync
+```
+
+## Salt Management
+
+### Production (Must Configure)
 
 ```bash
 export MYJPA_ENCRYPT_SALT=your_unique_salt_here
 ```
 
-### 开发环境
+### Development
 
-未配置时使用固定的开发盐值，仅限开发使用。
+Uses a fixed development salt when not configured. For development use only.
 
-## 安全说明
+## Virtual Thread Compatibility
 
-- 密钥通过 PBKDF2 派生，600,000 次迭代
-- 每次加密使用随机 IV
-- GCM 模式提供认证加密（完整性保护）
-- 生产环境必须配置唯一盐值
-- 不要在代码中硬编码密钥
+`EncryptConverter` automatically registers transaction cleanup callbacks to prevent Cipher ThreadLocal memory leaks in virtual thread (Java 21+) scenarios.
+
+## Security Notes
+
+- Keys are derived via PBKDF2 with 600,000 iterations
+- Random IV per encryption
+- GCM mode provides authenticated encryption (integrity protection)
+- Production must configure a unique salt
+- Never hardcode keys in source code

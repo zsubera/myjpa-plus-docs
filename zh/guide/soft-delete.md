@@ -56,6 +56,41 @@ private Boolean deleted;
 - `null` 或 `false` = 未删除
 - `true` = 已删除
 
+### Integer 类型
+
+```java
+@Entity
+public class AuditLog {
+    @SoftDelete(deletedIntValue = 1)
+    private Integer deleted = 0;
+}
+```
+
+### String 类型
+
+```java
+@Entity
+public class Document {
+    @SoftDelete(deletedStringValue = "ARCHIVED")
+    private String status = "ACTIVE";
+}
+```
+
+### 删除时间戳
+
+软删除时自动设置时间戳：
+
+```java
+@Entity
+public class User {
+    @SoftDelete
+    private Boolean deleted;
+
+    @SoftDelete(deletedTimestampField = "deletedAt")
+    private LocalDateTime deletedAt;
+}
+```
+
 ## 使用 MyJpaRepository
 
 `MyJpaRepository` 接口提供内置的软删除方法：
@@ -166,4 +201,43 @@ boolean hasSoftDelete = filterBean.hasSoftDeleteField(Product.class);
 
 // 预注册实体以缓存结果
 filterBean.registerEntity(Product.class);
+```
+
+## SoftDeleteBulkExecutor
+
+批量软删除操作：
+
+```java
+// 软删除所有实体（带行数保护）
+int affected = SoftDeleteBulkExecutor.softDeleteAll(em, User.class, true);
+
+// 自定义最大行数（默认：10000）
+int affected = SoftDeleteBulkExecutor.softDeleteAll(em, User.class, true, 5000);
+
+// 按 ID 软删除
+int affected = SoftDeleteBulkExecutor.softDeleteByIds(em, User.class, List.of(1L, 2L, 3L));
+```
+
+::: warning 行数保护
+`softDeleteAll()` 在执行前检查 `TransactionSynchronizationManager.isActualTransactionActive()`。没有活动事务时会抛出异常，防止不可回滚的数据丢失。
+:::
+
+## SoftDeleteContext（虚拟线程支持）
+
+虚拟线程（Java 21+）场景：
+
+```java
+// 使用 withIgnore — 推荐用于虚拟线程
+List<User> allUsers = SoftDeleteContext.withIgnore(() -> repository.findAll());
+
+// 带返回值的 withIgnore
+Optional<User> user = SoftDeleteContext.withIgnore(() -> repository.findById(id));
+
+// 手动 push/pop（旧方式，仍支持）
+SoftDeleteContext.pushIgnore();
+try {
+    List<User> all = repository.findAll();
+} finally {
+    SoftDeleteContext.popIgnore();
+}
 ```
