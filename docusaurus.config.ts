@@ -5,7 +5,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 const config: Config = {
   title: 'MyJpa-Plus',
   tagline: 'Type-safe JPA Query Builder',
-  favicon: 'img/favicon.ico',
+  favicon: 'img/favicon.png',
 
   url: 'https://zsubera.github.io',
   baseUrl: '/myjpa-plus-docs/',
@@ -17,7 +17,7 @@ const config: Config = {
   onBrokenMarkdownLinks: 'warn',
 
   i18n: {
-    defaultLocale: 'en',
+    defaultLocale: 'zh-CN',
     locales: ['en', 'zh-CN'],
     localeConfigs: {
       en: { label: 'English' },
@@ -30,6 +30,7 @@ const config: Config = {
       'classic',
       {
         docs: {
+          routeBasePath: '/',
           sidebarPath: './sidebars.ts',
           editUrl: 'https://github.com/zsubera/myjpa-plus-docs/edit/main/',
           lastVersion: 'current',
@@ -48,7 +49,7 @@ const config: Config = {
   ],
 
   themeConfig: {
-    image: 'img/social-card.png',
+    image: 'img/logo.svg',
     colorMode: {
       defaultMode: 'light',
       respectPrefersColorScheme: true,
@@ -94,20 +95,20 @@ const config: Config = {
         {
           title: 'Docs',
           items: [
-            { label: 'Getting Started', to: '/docs/getting-started' },
-            { label: 'QuerySpec', to: '/docs/query-spec' },
-            { label: 'API Reference', to: '/docs/api' },
+            { label: 'Getting Started', to: '/getting-started' },
+            { label: 'QuerySpec', to: '/query-spec' },
+            { label: 'API Reference', to: '/api' },
           ],
         },
         {
           title: 'Community',
           items: [
             { label: 'GitHub', href: 'https://github.com/zsubera/myjpa-plus' },
-            { label: 'Changelog', to: '/docs/changelog' },
+            { label: 'Changelog', to: '/changelog' },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Zsubera. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} Zsubera. MyJpa-Plus Documentation.`,
     },
     prism: {
       theme: prismThemes.github,

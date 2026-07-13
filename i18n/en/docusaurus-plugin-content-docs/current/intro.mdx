@@ -1,0 +1,81 @@
+---
+sidebar_position: 1
+slug: /
+---
+
+# Welcome to MyJpa-Plus
+
+MyJpa-Plus is a type-safe JPA Specification builder that provides a fluent Lambda API for Spring Data JPA.
+
+## Why MyJpa-Plus?
+
+The traditional JPA Criteria API is verbose and error-prone:
+
+```java
+// Traditional approach - error-prone
+Root<User> root = query.from(User.class);
+Predicate predicate = cb.and(
+    cb.equal(root.get("status"), "ACTIVE"),      // Magic strings!
+    cb.like(root.get("name"), "%John%"),          // Typo risk!
+    cb.greaterThan(root.get("age"), 18)
+);
+```
+
+MyJpa-Plus offers a concise, type-safe alternative:
+
+```java
+// MyJpa-Plus - type-safe
+QuerySpec<User> spec = new QuerySpec<User>()
+    .eq(User::getStatus, "ACTIVE")      // Compile-time check!
+    .like(User::getName, "John")        // No magic strings! Auto-adds %
+    .gt(User::getAge, 18);
+
+// Pass directly to findAll()
+userRepository.findAll(spec);
+```
+
+## Key Advantages
+
+| Feature | Traditional JPA | MyJpa-Plus |
+|---------|----------------|------------|
+| Field Reference | Strings (`"name"`) | Method references (`User::getName`) |
+| Type Safety | Runtime errors | Compile-time errors |
+| Null Handling | Manual checks | Automatic IS NULL |
+| OR/NOT Groups | Complex nesting | Clear Consumer API |
+| JOIN Conditions | Verbose code | Fluent builder |
+
+## Quick Start
+
+### Add Dependency
+
+```xml
+<dependency>
+    <groupId>com.github.zsubera</groupId>
+    <artifactId>myjpa-plus</artifactId>
+    <version>1.3.1</version>
+</dependency>
+```
+
+### Basic Usage
+
+```java
+// Define Repository
+public interface UserRepository extends MyJpaRepository<User, Long> {
+}
+
+// Build queries with QuerySpec
+QuerySpec<User> spec = QuerySpec.of(s -> s
+    .eq(User::getStatus, "ACTIVE")
+    .like(User::getName, "John")
+    .gt(User::getAge, 18)
+    .orderByDesc(User::getCreatedAt)
+);
+
+List<User> users = userRepository.findAll(spec);
+```
+
+## Next Steps
+
+- [What is MyJpa-Plus?](what-is-myjpa-plus.md) - Learn more about the project features
+- [Getting Started](getting-started.md) - Start using MyJpa-Plus
+- [Query Specification](query-spec.md) - Learn how to build complex queries

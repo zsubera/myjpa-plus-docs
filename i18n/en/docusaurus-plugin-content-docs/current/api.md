@@ -987,4 +987,3 @@ Static utility for generating entity and repository code from table definitions 
 | `generateRepository(tableName, columns, entityPackage, repoPackage, template)` | Generate with custom template |
 | `loadTemplateFromClasspath(classpathLocation)` | Load template from classpath |
 | `loadTemplateFromFile(templatePath)` | Load template from file |
-

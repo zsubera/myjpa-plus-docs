@@ -1,41 +1,40 @@
-# Website
+# MyJpa-Plus Documentation
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+MyJpa-Plus 是一个类型安全的 JPA Specification 构建器，为 Spring Data JPA 提供流畅的 Lambda API，消除硬编码字段名字符串。
 
-## Installation
+## 特性
+
+- 类型安全的查询构建 - 使用方法引用替代字符串
+- 流畅的 API 设计 - 支持 AND/OR 条件组合
+- 软删除支持 - 自动过滤已删除记录
+- 批量操作 - 类型安全的批量更新和删除
+- UPSERT 支持 - 跨数据库的合并插入操作
+- 字段加密和脱敏
+- 审计字段自动填充
+
+## 文档
+
+访问文档站点: https://zsubera.github.io/myjpa-plus-docs/
+
+## 本地开发
 
 ```bash
-yarn
-```
-
-## Local Development
-
-```bash
+yarn install
 yarn start
 ```
 
-This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
-
-## Build
+## 构建
 
 ```bash
 yarn build
 ```
 
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
-
-## Deployment
-
-Using SSH:
+## 部署
 
 ```bash
-USE_SSH=true yarn deploy
+GIT_USER=<Your GitHub username> USE_SSH=true yarn deploy
 ```
 
-Not using SSH:
+## 许可证
 
-```bash
-GIT_USER=<Your GitHub username> yarn deploy
-```
-
-If you are using GitHub pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.
+MIT License

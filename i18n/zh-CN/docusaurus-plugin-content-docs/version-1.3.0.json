@@ -1,0 +1,14 @@
+{
+  "version.label": {
+    "message": "1.3.0",
+    "description": "The label for version 1.3.0"
+  },
+  "sidebar.guideSidebar.category.Guide": {
+    "message": "Guide",
+    "description": "The label for category 'Guide' in sidebar 'guideSidebar'"
+  },
+  "sidebar.guideSidebar.category.Reference": {
+    "message": "Reference",
+    "description": "The label for category 'Reference' in sidebar 'guideSidebar'"
+  }
+}

@@ -2,46 +2,79 @@
 sidebar_position: 1
 ---
 
-# Tutorial Intro
+# 欢迎使用 MyJpa-Plus
 
-Let's discover **Docusaurus in less than 5 minutes**.
+MyJpa-Plus 是一个类型安全的 JPA Specification 构建器，为 Spring Data JPA 提供流畅的 Lambda API。
 
-## Getting Started
+## 为什么选择 MyJpa-Plus？
 
-Get started by **creating a new site**.
+传统的 JPA Criteria API 冗长且容易出错：
 
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
-
-### What you'll need
-
-- [Node.js](https://nodejs.org/en/download/) version 20.0 or above:
-  - When installing Node.js, you are recommended to check all checkboxes related to dependencies.
-
-## Generate a new site
-
-Generate a new Docusaurus site using the **classic template**.
-
-The classic template will automatically be added to your project after you run the command:
-
-```bash
-npm init docusaurus@latest my-website classic
+```java
+// 传统方式 - 容易出错
+Root<User> root = query.from(User.class);
+Predicate predicate = cb.and(
+    cb.equal(root.get("status"), "ACTIVE"),      // 魔法字符串！
+    cb.like(root.get("name"), "%John%"),          // 拼写错误风险！
+    cb.greaterThan(root.get("age"), 18)
+);
 ```
 
-You can type this command into Command Prompt, Powershell, Terminal, or any other integrated terminal of your code editor.
+MyJpa-Plus 提供了简洁、类型安全的替代方案：
 
-The command also installs all necessary dependencies you need to run Docusaurus.
+```java
+// MyJpa-Plus - 类型安全
+QuerySpec<User> spec = new QuerySpec<User>()
+    .eq(User::getStatus, "ACTIVE")      // 编译时检查！
+    .like(User::getName, "John")        // 没有魔法字符串！自动添加 %
+    .gt(User::getAge, 18);
 
-## Start your site
-
-Run the development server:
-
-```bash
-cd my-website
-npm run start
+// 直接传递给 findAll()
+userRepository.findAll(spec);
 ```
 
-The `cd` command changes the directory you're working with. In order to work with your newly created Docusaurus site, you'll need to navigate the terminal there.
+## 核心优势
 
-The `npm run start` command builds your website locally and serves it through a development server, ready for you to view at http://localhost:3000/.
+| 特性 | 传统 JPA | MyJpa-Plus |
+|------|----------|------------|
+| 字段引用 | 字符串 (`"name"`) | 方法引用 (`User::getName`) |
+| 类型安全 | 运行时错误 | 编译时错误 |
+| 空值处理 | 手动检查 | 自动 IS NULL |
+| OR/NOT 组 | 复杂嵌套 | 清晰的 Consumer API |
+| JOIN 条件 | 冗长代码 | 流畅的构建器 |
 
-Open `docs/intro.md` (this page) and edit some lines: the site **reloads automatically** and displays your changes.
+## 快速开始
+
+### 添加依赖
+
+```xml
+<dependency>
+    <groupId>com.github.zsubera</groupId>
+    <artifactId>myjpa-plus</artifactId>
+    <version>1.3.0</version>
+</dependency>
+```
+
+### 基本用法
+
+```java
+// 定义 Repository
+public interface UserRepository extends MyJpaRepository<User, Long> {
+}
+
+// 使用 QuerySpec 构建查询
+QuerySpec<User> spec = QuerySpec.of(s -> s
+    .eq(User::getStatus, "ACTIVE")
+    .like(User::getName, "John")
+    .gt(User::getAge, 18)
+    .orderByDesc(User::getCreatedAt)
+);
+
+List<User> users = userRepository.findAll(spec);
+```
+
+## 下一步
+
+- [什么是 MyJpa-Plus?](what-is-myjpa-plus.md) - 详细了解项目特性
+- [快速入门](getting-started.md) - 开始使用 MyJpa-Plus
+- [查询规范](query-spec.md) - 学习如何构建复杂查询

@@ -13,7 +13,7 @@ This document describes the internal architecture of MyJpa-Plus, including modul
 com.zsubera.jpa
 ├── spec/              # Query specification builder (core)
 │   ├── SFunction        — Serializable functional interface for lambda property extraction
-│   ├── QuerySpec        — Main entry point (implements Specification&lt;T&gt; + ConditionBuilder)
+│   ├── QuerySpec        — Main entry point (implements Specification<T> + ConditionBuilder)
 │   ├── SubQuerySpec     — EXISTS/IN subquery builder (eager evaluation)
 │   ├── CteSpec          — CTE builder (native SQL)
 │   ├── ConditionBuilder — 40+ default condition methods (lazy evaluation)
@@ -132,7 +132,7 @@ com.zsubera.jpa
 
 ```
 User Code                   Library                        JPA Provider
-─────────                   ───────                        ────────────
+──────────                   ───────                        ────────────
 repository.findAll(s ->     QuerySpec.of(consumer)
   s.eq(User::getName,       │
     "John")                 │
@@ -307,4 +307,3 @@ Recursion depth:          NodeResolver=50, CacheKeyBuilder=128
 | LambdaUtils | Yes | Caffeine cache (SampledEvictionCache backend) |
 | IdentifierValidator | Yes | Volatile flags (write-once at configuration time) |
 | SampledEvictionCache | Yes | Caffeine built-in concurrency safety |
-

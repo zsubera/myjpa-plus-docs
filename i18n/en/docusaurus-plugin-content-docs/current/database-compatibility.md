@@ -140,4 +140,3 @@ Key changes:
 - `QueryCacheManager` now supports `CacheAdapter` SPI
 - Keyset pagination added
 - ThreadLocal management for `@IgnoreSoftDelete`
-

@@ -1,0 +1,22 @@
+{
+  "title": {
+    "message": "MyJpa-Plus",
+    "description": "The title in the navbar"
+  },
+  "logo.alt": {
+    "message": "MyJpa-Plus Logo",
+    "description": "The alt text of navbar logo"
+  },
+  "item.label.Guide": {
+    "message": "指南",
+    "description": "Navbar item with label Guide"
+  },
+  "item.label.API": {
+    "message": "API",
+    "description": "Navbar item with label API"
+  },
+  "item.label.GitHub": {
+    "message": "GitHub",
+    "description": "Navbar item with label GitHub"
+  }
+}
