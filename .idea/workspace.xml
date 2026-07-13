@@ -1,57 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
   <component name="ChangeListManager">
-    <list default="true" id="c4ffdbbc-4bb2-438b-8dd1-739610f1f06e" name="更改" comment="">
-      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/blog/2019-05-28-first-blog-post.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/blog/2019-05-29-long-blog-post.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/blog/2021-08-01-mdx-blog-post.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/blog/2021-08-26-welcome/docusaurus-plushie-banner.jpeg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/blog/2021-08-26-welcome/index.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/blog/authors.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/blog/tags.yml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/api.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/api.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/architecture.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/architecture.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/changelog.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/changelog.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/database-compatibility.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/database-compatibility.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/faq.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/faq.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/intro.mdx" beforeDir="false" afterPath="$PROJECT_DIR$/docs/intro.mdx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/tutorial-basics/_category_.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/tutorial-basics/congratulations.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/tutorial-basics/create-a-blog-post.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/tutorial-basics/create-a-document.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/tutorial-basics/create-a-page.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/tutorial-basics/deploy-your-site.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/tutorial-basics/markdown-features.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/tutorial-extras/_category_.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/tutorial-extras/img/docsVersionDropdown.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/tutorial-extras/img/localeDropdown.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/tutorial-extras/manage-docs-versions.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docs/tutorial-extras/translate-your-site.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/docusaurus.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/docusaurus.config.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/HomepageFeatures/index.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/HomepageFeatures/styles.module.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/index.module.css" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/index.tsx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/pages/markdown-page.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/img/docusaurus-social-card.jpg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/img/docusaurus.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/img/undraw_docusaurus_mountain.svg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/img/undraw_docusaurus_react.svg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/static/img/undraw_docusaurus_tree.svg" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/versioned_docs/version-1.3.0/intro.mdx" beforeDir="false" afterPath="$PROJECT_DIR$/versioned_docs/version-1.3.0/intro.mdx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/versioned_docs/version-1.3.0/tutorial-basics/_category_.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/versioned_docs/version-1.3.0/tutorial-basics/congratulations.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/versioned_docs/version-1.3.0/tutorial-basics/create-a-blog-post.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/versioned_docs/version-1.3.0/tutorial-basics/create-a-document.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/versioned_docs/version-1.3.0/tutorial-basics/create-a-page.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/versioned_docs/version-1.3.0/tutorial-basics/deploy-your-site.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/versioned_docs/version-1.3.0/tutorial-basics/markdown-features.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/versioned_docs/version-1.3.0/tutorial-extras/_category_.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/versioned_docs/version-1.3.0/tutorial-extras/img/docsVersionDropdown.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/versioned_docs/version-1.3.0/tutorial-extras/img/localeDropdown.png" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/versioned_docs/version-1.3.0/tutorial-extras/manage-docs-versions.mdx" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/versioned_docs/version-1.3.0/tutorial-extras/translate-your-site.mdx" beforeDir="false" />
+    <list default="true" id="c4ffdbbc-4bb2-438b-8dd1-739610f1f06e" name="更改" comment="docs: 更新文档结构和内容以匹配版本1.3.1&#10;&#10;- 移除 tutorial-basics 和 tutorial-extras 分类配置&#10;- 移除作者配置文件 authors.yml&#10;- 移除首页相关组件和样式文件&#10;- 在API文档中添加 persistenceStrategy 方法和 PersistenceContextStrategy 说明&#10;- 在架构文档中更新缓存实现为 Caffeine 相关组件&#10;- 添加版本1.3.1的变更日志详情&#10;- 更新首页内容为中文介绍&#10;- 修改配置文件默认语言为中文并调整路由&#10;- 更新README为项目功能介绍&#10;- 在数据库兼容性文档中添加升级路径说明&#10;- 在FAQ中添加持久化上下文策略相关内容">
+      <change beforePath="$PROJECT_DIR$/docs/projection.md" beforeDir="false" afterPath="$PROJECT_DIR$/docs/projection.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/i18n/en/docusaurus-plugin-content-docs/current/projection.md" beforeDir="false" afterPath="$PROJECT_DIR$/i18n/en/docusaurus-plugin-content-docs/current/projection.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -90,6 +45,10 @@
     "git-widget-placeholder": "main",
     "javascript.preferred.runtime.type.id": "node",
     "last_opened_file_path": "D:/learn",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "npm.serve.executor": "Run",
     "npm.start.executor": "Run",
@@ -139,11 +98,35 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1783973108522</updated>
-      <workItem from="1783973109405" duration="323000" />
+      <workItem from="1783973109405" duration="976000" />
     </task>
+    <task id="LOCAL-00001" summary="docs: 更新文档结构和内容以匹配版本1.3.1&#10;&#10;- 移除 tutorial-basics 和 tutorial-extras 分类配置&#10;- 移除作者配置文件 authors.yml&#10;- 移除首页相关组件和样式文件&#10;- 在API文档中添加 persistenceStrategy 方法和 PersistenceContextStrategy 说明&#10;- 在架构文档中更新缓存实现为 Caffeine 相关组件&#10;- 添加版本1.3.1的变更日志详情&#10;- 更新首页内容为中文介绍&#10;- 修改配置文件默认语言为中文并调整路由&#10;- 更新README为项目功能介绍&#10;- 在数据库兼容性文档中添加升级路径说明&#10;- 在FAQ中添加持久化上下文策略相关内容">
+      <option name="closed" value="true" />
+      <created>1783973610058</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1783973610059</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="docs: 更新文档结构和内容以匹配版本1.3.1&#10;&#10;- 移除 tutorial-basics 和 tutorial-extras 分类配置&#10;- 移除作者配置文件 authors.yml&#10;- 移除首页相关组件和样式文件&#10;- 在API文档中添加 persistenceStrategy 方法和 PersistenceContextStrategy 说明&#10;- 在架构文档中更新缓存实现为 Caffeine 相关组件&#10;- 添加版本1.3.1的变更日志详情&#10;- 更新首页内容为中文介绍&#10;- 修改配置文件默认语言为中文并调整路由&#10;- 更新README为项目功能介绍&#10;- 在数据库兼容性文档中添加升级路径说明&#10;- 在FAQ中添加持久化上下文策略相关内容" />
+    <option name="LAST_COMMIT_MESSAGE" value="docs: 更新文档结构和内容以匹配版本1.3.1&#10;&#10;- 移除 tutorial-basics 和 tutorial-extras 分类配置&#10;- 移除作者配置文件 authors.yml&#10;- 移除首页相关组件和样式文件&#10;- 在API文档中添加 persistenceStrategy 方法和 PersistenceContextStrategy 说明&#10;- 在架构文档中更新缓存实现为 Caffeine 相关组件&#10;- 添加版本1.3.1的变更日志详情&#10;- 更新首页内容为中文介绍&#10;- 修改配置文件默认语言为中文并调整路由&#10;- 更新README为项目功能介绍&#10;- 在数据库兼容性文档中添加升级路径说明&#10;- 在FAQ中添加持久化上下文策略相关内容" />
   </component>
 </project>
