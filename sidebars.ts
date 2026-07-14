@@ -16,10 +16,13 @@ const sidebars: SidebarsConfig = {
         'cte',
         'soft-delete',
         'encryption',
+        'field-masking',
         'audit',
         'myjpa-template',
         'projection',
         'code-generation',
+        'code-enum',
+        'security',
       ],
     },
     {

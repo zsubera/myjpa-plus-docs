@@ -4,11 +4,11 @@
     "description": "The label for version current"
   },
   "sidebar.guideSidebar.category.Guide": {
-    "message": "Guide",
+    "message": "指南",
     "description": "The label for category 'Guide' in sidebar 'guideSidebar'"
   },
   "sidebar.guideSidebar.category.Reference": {
-    "message": "Reference",
+    "message": "参考",
     "description": "The label for category 'Reference' in sidebar 'guideSidebar'"
   }
 }

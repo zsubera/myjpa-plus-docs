@@ -8,7 +8,7 @@ title: Projection Queries
 Projection queries let you select specific fields instead of loading entire entities. Use `QuerySpec.select()` to choose fields.
 
 :::info
-投影查询返回 `Tuple` 或 DTO（非实体），推荐通过 `MyJpaTemplate.find()` 获取类型安全的结果。`MyJpaRepository.findAll(spec)` 也支持投影模式（QuerySpec 带 `select()` 时自动识别），但返回类型为 `List<T>`，需自行转换。
+Projection queries return `Tuple` or DTO objects (not entities). `MyJpaTemplate.find()` is recommended for type-safe results. `MyJpaRepository.findAll(spec)` also supports projection mode (auto-detected when QuerySpec has `select()`), but returns `List<T>` — manual conversion required.
 :::
 
 ## Basic Usage

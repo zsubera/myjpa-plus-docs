@@ -175,11 +175,25 @@ For more control, use `SoftDeleteHelper` directly:
 // Get Specification for non-deleted entities (cached)
 Specification<Product> notDeleted = SoftDeleteHelper.isNotDeleted(Product.class);
 List<Product> products = repository.findAll(notDeleted);
+```
 
+Generated SQL:
+```sql
+SELECT * FROM products WHERE deleted = false
+```
+
+```java
 // Get only deleted entities (cached)
 Specification<Product> deleted = SoftDeleteHelper.isDeleted(Product.class);
 List<Product> archived = repository.findAll(deleted);
+```
 
+Generated SQL:
+```sql
+SELECT * FROM products WHERE deleted = true
+```
+
+```java
 // Combine with other Specifications
 Specification<Product> active = SoftDeleteHelper.isNotDeleted(Product.class)
     .and((root, query, cb) -> cb.equal(root.get("status"), "ACTIVE"));
@@ -193,6 +207,11 @@ List<Product> products = repository.findAll(active);
 QuerySpec<Product> qs = SoftDeleteHelper.notDeletedQuery(Product.class);
 qs.eq(Product::getCategory, "Electronics");
 List<Product> products = repository.findAll(qs.toSpecification());
+```
+
+Generated SQL:
+```sql
+SELECT * FROM products WHERE deleted = false AND category = 'Electronics'
 ```
 
 ## Utility Methods
@@ -232,6 +251,12 @@ public interface ArchiveRepository extends MyJpaRepository<Product, Long> {
 }
 ```
 
+Generated SQL:
+```sql
+SELECT * FROM products WHERE id = ?
+-- Note: no deleted = false condition, includes deleted records
+```
+
 ## SoftDeleteFilterBean
 
 Use `SoftDeleteFilterBean` for programmatic control:
@@ -258,12 +283,24 @@ For batch soft-delete operations:
 ```java
 // Soft-delete all entities (with row-count protection)
 int affected = SoftDeleteBulkExecutor.softDeleteAll(em, User.class, true);
+```
 
+Generated SQL:
+```sql
+UPDATE users SET deleted = true WHERE deleted = false
+```
+
+```java
 // Soft-delete with custom max rows (default: 10000)
 int affected = SoftDeleteBulkExecutor.softDeleteAll(em, User.class, true, 5000);
 
 // Soft-delete by IDs
 int affected = SoftDeleteBulkExecutor.softDeleteByIds(em, User.class, List.of(1L, 2L, 3L));
+```
+
+Generated SQL:
+```sql
+UPDATE users SET deleted = true WHERE id IN (1, 2, 3) AND deleted = false
 ```
 
 ::: warning Row-Count Protection
@@ -297,5 +334,11 @@ try {
 } finally {
     SoftDeleteContext.restoreForAsync(savedIgnoreCount);
 }
+```
+
+Generated SQL (soft-delete filtering temporarily disabled):
+```sql
+SELECT * FROM users
+-- Note: no deleted = false condition, includes all records
 ```
 

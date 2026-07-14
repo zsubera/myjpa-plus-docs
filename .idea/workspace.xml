@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="c4ffdbbc-4bb2-438b-8dd1-739610f1f06e" name="更改" comment="docs(api): 更新API文档以匹配1.3.0版本&#10;&#10;- 移除clearCache()和isWhitelistFrozen()方法说明&#10;- 添加Lambda便利方法章节及代码示例&#10;- 补充静态工具类方法定义位置说明&#10;- 更新CacheAdapter继承方法说明&#10;- 移除EncryptConverter事务清理相关内容&#10;- 修复QuerySpec文档中的HTML转义字符&#10;- 添加持久化上下文策略相关内容&#10;- 更新groupId为io.github.zsubera&#10;- 升级Docusaurus依赖版本&#10;- 更新投影查询文档展示两种实现方式&#10;- 添加异步边界支持的软删除上下文操作示例&#10;- 更新FAQ和快速开始文档版本号&#10;- 优化IDEA工作空间配置和运行任务设置">
-      <change beforePath="$PROJECT_DIR$/docusaurus.config.ts" beforeDir="false" afterPath="$PROJECT_DIR$/docusaurus.config.ts" afterDir="false" />
-    </list>
+    <list default="true" id="c4ffdbbc-4bb2-438b-8dd1-739610f1f06e" name="更改" comment="docs(audit): 更新审计文档并清理多余空行&#10;&#10;- 重命名标题从 &quot;Audit Annotations&quot; 到 &quot;Audit&quot;&#10;- 更新 Spring Data JPA 审计配置说明&#10;- 替换 @CreatedAt 和 @UpdatedAt 为 @CreatedDate 和 @LastModifiedDate&#10;- 添加自定义 AuditorAware 配置方法&#10;- 更新 AuditUtils 工具类使用说明&#10;- 清理文档末尾多余空行&#10;- 更新英文版本文档内容同步变更" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -56,7 +54,7 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
-  <component name="RunManager" selected="npm.build">
+  <component name="RunManager" selected="npm.serve">
     <configuration name="build" type="js.build_tools.npm" temporary="true" nameIsGenerated="true">
       <package-json value="$PROJECT_DIR$/package.json" />
       <command value="run" />
@@ -89,8 +87,8 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="npm.build" />
         <item itemvalue="npm.serve" />
+        <item itemvalue="npm.build" />
         <item itemvalue="npm.start" />
       </list>
     </recent_temporary>
@@ -109,7 +107,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1783973108522</updated>
-      <workItem from="1783973109405" duration="4993000" />
+      <workItem from="1783973109405" duration="5723000" />
     </task>
     <task id="LOCAL-00001" summary="docs: 更新文档结构和内容以匹配版本1.3.1&#10;&#10;- 移除 tutorial-basics 和 tutorial-extras 分类配置&#10;- 移除作者配置文件 authors.yml&#10;- 移除首页相关组件和样式文件&#10;- 在API文档中添加 persistenceStrategy 方法和 PersistenceContextStrategy 说明&#10;- 在架构文档中更新缓存实现为 Caffeine 相关组件&#10;- 添加版本1.3.1的变更日志详情&#10;- 更新首页内容为中文介绍&#10;- 修改配置文件默认语言为中文并调整路由&#10;- 更新README为项目功能介绍&#10;- 在数据库兼容性文档中添加升级路径说明&#10;- 在FAQ中添加持久化上下文策略相关内容">
       <option name="closed" value="true" />
@@ -135,7 +133,23 @@
       <option name="project" value="LOCAL" />
       <updated>1784032199622</updated>
     </task>
-    <option name="localTasksCounter" value="4" />
+    <task id="LOCAL-00004" summary="config(docusaurus): 更新 Docusaurus 配置以适配新版本&#10;&#10;- 将 onBrokenMarkdownLinks 配置移动到 markdown.hooks 中&#10;- 清理 .idea/workspace.xml 中的多余变更记录&#10;- 更新文档版本信息以匹配 1.3.0 版本发布需求&#10;- 优化项目配置结构以提升构建性能">
+      <option name="closed" value="true" />
+      <created>1784032574856</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1784032574856</updated>
+    </task>
+    <task id="LOCAL-00005" summary="docs(audit): 更新审计文档并清理多余空行&#10;&#10;- 重命名标题从 &quot;Audit Annotations&quot; 到 &quot;Audit&quot;&#10;- 更新 Spring Data JPA 审计配置说明&#10;- 替换 @CreatedAt 和 @UpdatedAt 为 @CreatedDate 和 @LastModifiedDate&#10;- 添加自定义 AuditorAware 配置方法&#10;- 更新 AuditUtils 工具类使用说明&#10;- 清理文档末尾多余空行&#10;- 更新英文版本文档内容同步变更">
+      <option name="closed" value="true" />
+      <created>1784033240461</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1784033240461</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -156,6 +170,8 @@
     <MESSAGE value="docs: 更新文档结构和内容以匹配版本1.3.1&#10;&#10;- 移除 tutorial-basics 和 tutorial-extras 分类配置&#10;- 移除作者配置文件 authors.yml&#10;- 移除首页相关组件和样式文件&#10;- 在API文档中添加 persistenceStrategy 方法和 PersistenceContextStrategy 说明&#10;- 在架构文档中更新缓存实现为 Caffeine 相关组件&#10;- 添加版本1.3.1的变更日志详情&#10;- 更新首页内容为中文介绍&#10;- 修改配置文件默认语言为中文并调整路由&#10;- 更新README为项目功能介绍&#10;- 在数据库兼容性文档中添加升级路径说明&#10;- 在FAQ中添加持久化上下文策略相关内容" />
     <MESSAGE value="docs(projection): 更新投影查询文档以展示两种实现方式&#10;&#10;- 添加 MyJpaTemplate 类型安全方式的代码示例&#10;- 添加 MyJpaRepository 自动检测方式的代码示例&#10;- 补充分页功能的两种实现方式对比&#10;- 完善完整示例代码结构&#10;- 更新中英文文档同步显示信息提示块" />
     <MESSAGE value="docs(api): 更新API文档以匹配1.3.0版本&#10;&#10;- 移除clearCache()和isWhitelistFrozen()方法说明&#10;- 添加Lambda便利方法章节及代码示例&#10;- 补充静态工具类方法定义位置说明&#10;- 更新CacheAdapter继承方法说明&#10;- 移除EncryptConverter事务清理相关内容&#10;- 修复QuerySpec文档中的HTML转义字符&#10;- 添加持久化上下文策略相关内容&#10;- 更新groupId为io.github.zsubera&#10;- 升级Docusaurus依赖版本&#10;- 更新投影查询文档展示两种实现方式&#10;- 添加异步边界支持的软删除上下文操作示例&#10;- 更新FAQ和快速开始文档版本号&#10;- 优化IDEA工作空间配置和运行任务设置" />
-    <option name="LAST_COMMIT_MESSAGE" value="docs(api): 更新API文档以匹配1.3.0版本&#10;&#10;- 移除clearCache()和isWhitelistFrozen()方法说明&#10;- 添加Lambda便利方法章节及代码示例&#10;- 补充静态工具类方法定义位置说明&#10;- 更新CacheAdapter继承方法说明&#10;- 移除EncryptConverter事务清理相关内容&#10;- 修复QuerySpec文档中的HTML转义字符&#10;- 添加持久化上下文策略相关内容&#10;- 更新groupId为io.github.zsubera&#10;- 升级Docusaurus依赖版本&#10;- 更新投影查询文档展示两种实现方式&#10;- 添加异步边界支持的软删除上下文操作示例&#10;- 更新FAQ和快速开始文档版本号&#10;- 优化IDEA工作空间配置和运行任务设置" />
+    <MESSAGE value="config(docusaurus): 更新 Docusaurus 配置以适配新版本&#10;&#10;- 将 onBrokenMarkdownLinks 配置移动到 markdown.hooks 中&#10;- 清理 .idea/workspace.xml 中的多余变更记录&#10;- 更新文档版本信息以匹配 1.3.0 版本发布需求&#10;- 优化项目配置结构以提升构建性能" />
+    <MESSAGE value="docs(audit): 更新审计文档并清理多余空行&#10;&#10;- 重命名标题从 &quot;Audit Annotations&quot; 到 &quot;Audit&quot;&#10;- 更新 Spring Data JPA 审计配置说明&#10;- 替换 @CreatedAt 和 @UpdatedAt 为 @CreatedDate 和 @LastModifiedDate&#10;- 添加自定义 AuditorAware 配置方法&#10;- 更新 AuditUtils 工具类使用说明&#10;- 清理文档末尾多余空行&#10;- 更新英文版本文档内容同步变更" />
+    <option name="LAST_COMMIT_MESSAGE" value="docs(audit): 更新审计文档并清理多余空行&#10;&#10;- 重命名标题从 &quot;Audit Annotations&quot; 到 &quot;Audit&quot;&#10;- 更新 Spring Data JPA 审计配置说明&#10;- 替换 @CreatedAt 和 @UpdatedAt 为 @CreatedDate 和 @LastModifiedDate&#10;- 添加自定义 AuditorAware 配置方法&#10;- 更新 AuditUtils 工具类使用说明&#10;- 清理文档末尾多余空行&#10;- 更新英文版本文档内容同步变更" />
   </component>
 </project>

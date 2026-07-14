@@ -97,6 +97,10 @@ myjpa-plus:
 QuerySpec<User> spec = new QuerySpec<>();
 spec.eq(User::getStatus, "ACTIVE");
 repository.findAll(spec);
+
+// Native Specification for comparison
+Specification<User> nativeSpec = (root, query, cb) -> cb.equal(root.get("status"), "ACTIVE");
+repository.findAll(nativeSpec);
 ```
 
 ### Q: How to build OR conditions?
@@ -191,6 +195,11 @@ jpa.executeBatchInSeparateTransactions(
 );
 ```
 
+**Advantages:**
+- Avoids lock wait timeouts caused by long transactions
+- Reduces transaction log and rollback segment pressure
+- Each batch commits independently — previously committed batches are not rolled back if a later batch fails
+
 ### Q: Are there row limits on bulk operations?
 
 Default max is 10,000 rows. Configure via:
@@ -244,9 +253,16 @@ public interface UserRepository extends MyJpaRepository<User, Long> {
 Or via ThreadLocal:
 ```java
 DefaultMyJpaRepository.withAutoFilterOverride(false, () -> {
+    // Within this scope, soft-delete filtering is not applied
     return userRepository.findAll();
 });
 ```
+
+### Q: Soft delete conflict with optimistic locking?
+
+Batch soft deletes (via CriteriaUpdate) bypass `@Version` checks. If you need to preserve optimistic locking semantics:
+1. Use `@IgnoreSoftDelete` on `@SoftDelete` entities to manually query and soft-delete one by one
+2. Or check version numbers before bulk operations
 
 ---
 
@@ -260,9 +276,18 @@ export MYJPA_ENCRYPT_KEY="your-encryption-key-at-least-16-bytes"
 export MYJPA_ENCRYPT_SALT="your-persistent-salt-value"
 ```
 
+**System properties:**
+```bash
+java -Dmyjpa.encrypt.key=your-key -Dmyjpa.encrypt.salt=your-salt -jar app.jar
+```
+
 ### Q: Is salt required in production?
 
-Yes. Without a configured salt, each JVM restart generates a random salt, rendering encrypted data unrecoverable. `MyJpaPlusAutoConfiguration` blocks startup in production if no salt is configured.
+Yes. Without a configured salt, each JVM restart generates a random salt, rendering encrypted data unrecoverable. `MyJpaPlusAutoConfiguration` performs startup validation:
+
+- Salt configured → normal startup
+- No salt + production → blocks startup
+- No salt + development → logs warning (uses a fixed dev salt when not configured)
 
 ### Q: How to rotate encryption keys?
 
@@ -301,6 +326,14 @@ public class User {
 
 Queries via `MyJpaTemplate` default to 10,000 rows. Direct `Repository.findAll()` has no limit.
 
+We recommend always using `MyJpaTemplate`:
+```java
+@Autowired
+private MyJpaTemplate jpa;
+
+List<User> users = jpa.findAll(User.class, spec);
+```
+
 ### Q: How to optimize deep pagination?
 
 Use Keyset (cursor-based) pagination:
@@ -311,6 +344,8 @@ KeysetPage<User> page1 = jpa.findKeysetPage(
 KeysetPage<User> page2 = jpa.findKeysetPage(
     User.class, spec, Sort.by("id"), 20, page1.lastSortValues());
 ```
+
+Keyset pagination performance is O(log n) regardless of page number, unlike offset pagination which degrades with depth.
 
 ### Q: IN clause with too many parameters?
 
@@ -359,7 +394,7 @@ Most features are compatible, but the following require Hibernate:
 
 ### Q: Coexistence with MyBatis-Plus?
 
-Yes. myjpa-plus only extends Spring Data JPA and does not conflict with MyBatis.
+Yes. myjpa-plus only extends Spring Data JPA and does not conflict with MyBatis. However, both may register beans with the same name (e.g., `MyJpaTemplate`), which is automatically resolved via `@ConditionalOnMissingBean`.
 
 ### Q: Multiple data sources?
 

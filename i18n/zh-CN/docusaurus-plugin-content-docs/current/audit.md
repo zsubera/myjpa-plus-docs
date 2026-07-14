@@ -1,123 +1,94 @@
 ---
 sidebar_position: 1
-title: 审计注解
+title: 审计
 ---
 
-# 审计注解
+# 审计
 
-MyJpa-Plus 提供审计注解，自动填充实体的创建/更新时间和用户信息。
+MyJpa-Plus 自动配置 Spring Data JPA 审计功能，并提供 `AuditUtils` 工具类用于操作审计日志。
 
-## 基本用法
+## Spring Data JPA 审计
 
-### 1. 定义审计字段
+MyJpa-Plus 自动注册 `AuditorAware<String>` Bean，从 Spring Security `SecurityContextHolder` 获取当前用户。您可以直接使用 Spring Data JPA 的标准审计注解。
+
+### 1. 启用审计
+
+在实体类上添加 `@EntityListeners(AuditingEntityListener.class)`：
 
 ```java
 @Entity
-@EntityListeners(AuditEntityListener.class)
+@EntityListeners(AuditingEntityListener.class)
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @CreatedAt
+    @CreatedDate
     private Instant createdAt;
 
-    @UpdatedAt
+    @LastModifiedDate
     private Instant updatedAt;
 
     @CreatedBy
     private String createdBy;
 
-    @UpdatedBy
+    @LastModifiedBy
     private String updatedBy;
 
-    private String name;
+    // getters and setters...
 }
 ```
 
-### 2. 实现 AuditUserProvider
+### 2. 支持的注解
 
-```java
-@Component
-public class SecurityAuditUserProvider implements AuditUserProvider {
-    @Override
-    public String getCurrentUser() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
-    }
-}
-```
+| 注解 | 类型 | 说明 |
+|------|------|------|
+| `@CreatedDate` | `Instant`, `LocalDateTime`, `Date`, `Long` | 创建时间戳 |
+| `@LastModifiedDate` | `Instant`, `LocalDateTime`, `Date`, `Long` | 最后修改时间戳 |
+| `@CreatedBy` | `String` | 创建人 |
+| `@LastModifiedBy` | `String` | 最后修改人 |
 
-## 支持的注解
+### 3. 自定义 AuditorAware
 
-### @CreatedAt
-
-自动填充创建时间，支持类型：
-- `Instant`
-- `LocalDateTime`
-- `Date`
-- `Long`（epoch millis）
-
-```java
-@CreatedAt
-private Instant createdAt;
-```
-
-### @UpdatedAt
-
-自动填充更新时间，支持类型同上。
-
-```java
-@UpdatedAt
-private Instant updatedAt;
-```
-
-### @CreatedBy
-
-自动填充创建用户，必须为 `String` 类型。
-
-```java
-@CreatedBy
-private String createdBy;
-```
-
-### @UpdatedBy
-
-自动填充更新用户，必须为 `String` 类型。
-
-```java
-@UpdatedBy
-private String updatedBy;
-```
-
-## 配置
-
-### 时区设置
+MyJpa-Plus 默认使用 `SecurityContextAuditorAware`（从 Spring Security 获取当前用户）。您可以通过提供 `AuditorAware<String>` Bean 覆盖：
 
 ```java
 @Configuration
 public class AuditConfig {
     @Bean
-    public AuditEntityListener auditEntityListener() {
-        AuditEntityListener.setAuditZoneId(ZoneId.of("Asia/Shanghai"));
-        return new AuditEntityListener();
+    public AuditorAware<String> auditorAware() {
+        return () -> Optional.ofNullable(
+            SecurityContextHolder.getContext().getAuthentication()?.getName()
+        );
     }
 }
 ```
 
-### 自动配置
+## AuditUtils
 
-Spring Boot 自动配置会自动注册 `AuditEntityListener`，无需手动配置。
+`AuditUtils` 是操作审计日志工具类，用于记录危险操作（如无条件 UPDATE/DELETE）的调用栈信息，便于生产环境追踪。
 
-## 工作原理
+### 方法
 
-1. `AuditEntityListener` 通过 `@PrePersist` 和 `@PreUpdate` 回调自动填充字段
-2. `AuditUserProvider` 接口提供当前用户信息
-3. 字段类型和注解在启动时校验，不支持的类型会抛出异常
+| 方法 | 说明 |
+|------|------|
+| `getCallStack()` | 获取格式化调用栈字符串（默认深度 5 层） |
+| `setMaxStackDepth(int)` | 设置最大调用栈深度（1-20） |
+| `getMaxStackDepth()` | 获取当前最大调用栈深度 |
 
-## 注意事项
+### 配置
 
-- `@CreatedBy` 和 `@UpdatedBy` 必须是 `String` 类型
-- `@CreatedAt` 和 `@UpdatedAt` 必须是支持的时间类型
-- 实现类需要注册为 Spring Bean
-- 审计字段会在每次持久化/更新时自动填充
+```yaml
+myjpa-plus:
+  audit:
+    stack-trace-depth: 5  # 调用栈深度，范围 1-20，默认 5
+```
 
+### 示例
+
+```java
+// 记录操作调用栈
+String callStack = AuditUtils.getCallStack();
+log.warn("Unconditional update executed from: {}", callStack);
+// 输出: UserService <- AdminController <- SecurityFilter
+```

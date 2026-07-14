@@ -5,18 +5,39 @@ title: 投影查询
 
 # 投影查询
 
-投影查询允许你只选择特定字段，而不是加载整个实体。使用 `QuerySpec.select()` 选择字段，通过 `MyJpaTemplate.find()` 执行投影。
+投影查询允许你只选择特定字段，而不是加载整个实体。使用 `QuerySpec.select()` 选择字段。
+
+:::info
+投影查询返回 `Tuple` 或 DTO（非实体），推荐通过 `MyJpaTemplate.find()` 获取类型安全的结果。`MyJpaRepository.findAll(spec)` 也支持投影模式（QuerySpec 带 `select()` 时自动识别），但返回类型为 `List<T>`，需自行转换。
+:::
 
 ## 基本用法
 
 ### Tuple 投影
 
+**方式一（推荐）：通过 `MyJpaTemplate`——类型安全**
 ```java
+@Autowired
+private MyJpaTemplate template;
+
+public List<Tuple> getUserNames() {
+    QuerySpec<User> spec = new QuerySpec<User>()
+        .select(User::getName, User::getEmail)
+        .eq(User::getStatus, "ACTIVE");
+    return template.find(User.class, spec);
+}
+```
+
+**方式二：通过 `MyJpaRepository`——`QuerySpec` 进入投影模式时自动识别**
+```java
+public interface UserRepository extends MyJpaRepository<User, Long> {
+}
+
+// 使用处——QuerySpec 带 select() 时 findAll 自动执行投影
 QuerySpec<User> spec = new QuerySpec<User>()
     .select(User::getName, User::getEmail)
     .eq(User::getStatus, "ACTIVE");
-
-List<Tuple> results = template.find(User.class, spec);
+List<Tuple> results = (List<Tuple>) (List<?>) repository.findAll(spec);
 ```
 
 生成的 SQL：
@@ -26,8 +47,8 @@ SELECT name, email FROM users WHERE status = 'ACTIVE'
 
 ### DTO 构造函数投影
 
+**方式一（推荐）：通过 `MyJpaTemplate`——类型安全**
 ```java
-// DTO 类 — 构造函数参数按名称匹配（见"DTO 名称匹配"）
 public record UserSummary(String name, String email) {}
 
 QuerySpec<User> spec = new QuerySpec<User>()
@@ -36,6 +57,16 @@ QuerySpec<User> spec = new QuerySpec<User>()
     .eq(User::getStatus, "ACTIVE");
 
 List<UserSummary> results = template.find(User.class, spec);
+```
+
+**方式二：通过 `MyJpaRepository`——需自行转换**
+```java
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(User::getName, User::getEmail)
+    .asDto(UserSummary.class)
+    .eq(User::getStatus, "ACTIVE");
+
+List<UserSummary> results = (List<UserSummary>) (List<?>) repository.findAll(spec);
 ```
 
 生成的 SQL：
@@ -258,12 +289,22 @@ SELECT age, name, email FROM users
 
 ## 分页
 
+**方式一（推荐）：通过 `MyJpaTemplate`**
 ```java
 QuerySpec<User> spec = new QuerySpec<User>()
     .select(User::getName, User::getEmail)
     .eq(User::getStatus, "ACTIVE");
 
 Page<Tuple> page = template.projectionPage(User.class, spec, PageRequest.of(0, 20));
+```
+
+**方式二：通过 `MyJpaRepository`**
+```java
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(User::getName, User::getEmail)
+    .eq(User::getStatus, "ACTIVE");
+
+Page<Tuple> page = (Page<Tuple>) (Page<?>) repository.findAll(spec, PageRequest.of(0, 20));
 ```
 
 生成的 SQL：

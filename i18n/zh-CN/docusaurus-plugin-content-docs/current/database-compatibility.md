@@ -122,6 +122,15 @@ mvn verify -Pintegration-tests -Dtest=MySQL*
 
 ## 升级路径
 
+### 从 1.3.0 升级到 1.3.1
+
+参见 [MIGRATION.md](https://github.com/zsubera/myjpa-plus/blob/main/MIGRATION.md) 获取完整迁移指南。
+
+主要变更：
+- Caffeine 缓存统一：所有手写缓存实现替换为 Caffeine
+- `persistenceStrategy()` 现在为 `UpdateSpec`、`DeleteSpec` 和 `MergeSpec` 支持 `DEFER_TO_CALLER` 模式
+- 多项安全和正确性修复
+
 ### 从 1.2.x 升级到 1.3.x
 
 参见 [MIGRATION.md](https://github.com/zsubera/myjpa-plus/blob/main/MIGRATION.md) 获取详细迁移指南。

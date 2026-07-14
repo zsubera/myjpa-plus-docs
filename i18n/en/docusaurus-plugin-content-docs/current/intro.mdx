@@ -5,14 +5,14 @@ slug: /
 
 # Welcome to MyJpa-Plus
 
-MyJpa-Plus is a type-safe JPA Specification builder that provides a fluent Lambda API for Spring Data JPA.
+MyJpa-Plus is a type-safe JPA Specification builder with a fluent Lambda API for Spring Data JPA.
 
 ## Why MyJpa-Plus?
 
-The traditional JPA Criteria API is verbose and error-prone:
+Traditional JPA Criteria API is verbose and error-prone:
 
 ```java
-// Traditional approach - error-prone
+// Traditional way - error-prone
 Root<User> root = query.from(User.class);
 Predicate predicate = cb.and(
     cb.equal(root.get("status"), "ACTIVE"),      // Magic strings!
@@ -21,13 +21,13 @@ Predicate predicate = cb.and(
 );
 ```
 
-MyJpa-Plus offers a concise, type-safe alternative:
+MyJpa-Plus provides a clean, type-safe alternative:
 
 ```java
-// MyJpa-Plus - type-safe
+// MyJpa-Plus - Type-safe
 QuerySpec<User> spec = new QuerySpec<User>()
     .eq(User::getStatus, "ACTIVE")      // Compile-time check!
-    .like(User::getName, "John")        // No magic strings! Auto-adds %
+    .like(User::getName, "John")        // No magic strings! Auto wraps with %
     .gt(User::getAge, 18);
 
 // Pass directly to findAll()
@@ -37,12 +37,12 @@ userRepository.findAll(spec);
 ## Key Advantages
 
 | Feature | Traditional JPA | MyJpa-Plus |
-|---------|----------------|------------|
-| Field Reference | Strings (`"name"`) | Method references (`User::getName`) |
-| Type Safety | Runtime errors | Compile-time errors |
-| Null Handling | Manual checks | Automatic IS NULL |
-| OR/NOT Groups | Complex nesting | Clear Consumer API |
-| JOIN Conditions | Verbose code | Fluent builder |
+|---------|---------------|------------|
+| Field reference | Strings (`"name"`) | Method references (`User::getName`) |
+| Type safety | Runtime errors | Compile-time errors |
+| Null handling | Manual checks | Auto IS NULL |
+| OR/NOT groups | Complex nesting | Clean Consumer API |
+| JOIN conditions | Verbose code | Fluent builder |
 
 ## Quick Start
 
@@ -76,6 +76,6 @@ List<User> users = userRepository.findAll(spec);
 
 ## Next Steps
 
-- [What is MyJpa-Plus?](what-is-myjpa-plus.md) - Learn more about the project features
+- [What is MyJpa-Plus?](what-is-myjpa-plus.md) - Detailed feature overview
 - [Getting Started](getting-started.md) - Start using MyJpa-Plus
 - [Query Specification](query-spec.md) - Learn how to build complex queries

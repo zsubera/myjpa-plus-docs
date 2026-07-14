@@ -121,7 +121,7 @@ Optional<Object[]> result = CteSpec
     .getSingleResult(em);
 ```
 
-### Get Single Result
+### Get Single Value
 
 ```java
 Optional<Object[]> result = CteSpec

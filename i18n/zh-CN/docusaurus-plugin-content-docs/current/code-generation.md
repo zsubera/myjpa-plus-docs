@@ -7,6 +7,10 @@ title: 代码生成
 
 `EntityCodeGenerator` 提供轻量级代码生成功能，快速生成 JPA 实体和仓库骨架代码。
 
+::: warning 实验性功能
+`EntityCodeGenerator` 标记为 `@apiNote Experimental`。它是一个独立的脚手架工具，不属于核心 API。
+:::
+
 ## 实体生成
 
 ### 基本用法

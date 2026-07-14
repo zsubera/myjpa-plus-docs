@@ -209,6 +209,26 @@ List<Product> products = repository.findAll(qs.toSpecification());
 SELECT * FROM products WHERE deleted = false AND category = 'Electronics'
 ```
 
+## 工具方法
+
+```java
+// 查找软删除字段名（缓存，无则返回 null）
+String fieldName = SoftDeleteHelper.findSoftDeleteField(Product.class);
+
+// 检查实体实例是否已软删除
+boolean isDeleted = SoftDeleteHelper.isSoftDeleted(Product.class, product);
+```
+
+## 自动过滤配置
+
+在 `application.yml` 中启用自动软删除过滤：
+
+```yaml
+myjpa-plus:
+  soft-delete:
+    auto-filter: true  # 默认：true
+```
+
 ## @IgnoreSoftDelete
 
 使用 `@IgnoreSoftDelete` 跳过特定方法或类型的自动过滤：
@@ -218,6 +238,12 @@ SELECT * FROM products WHERE deleted = false AND category = 'Electronics'
 @IgnoreSoftDelete
 @Query("SELECT p FROM Product p WHERE p.id = :id")
 Optional<Product> findByIdIncludingDeleted(@Param("id") Long id);
+
+// 跳过整个仓库
+@IgnoreSoftDelete
+public interface ArchiveRepository extends MyJpaRepository<Product, Long> {
+    // 该仓库的所有查询都会包含已软删除的实体
+}
 ```
 
 生成的 SQL：
@@ -250,6 +276,29 @@ int affected = SoftDeleteBulkExecutor.softDeleteByIds(em, User.class, List.of(1L
 UPDATE users SET deleted = true WHERE id IN (1, 2, 3) AND deleted = false
 ```
 
+::: warning 行数保护
+`softDeleteAll()` 在执行前会检查 `TransactionSynchronizationManager.isActualTransactionActive()`。如果没有活动事务，会抛出异常以防止不可回滚的数据丢失。
+:::
+
+## SoftDeleteFilterBean
+
+使用 `SoftDeleteFilterBean` 进行编程式控制：
+
+```java
+@Autowired
+private SoftDeleteFilterBean filterBean;
+
+// 对任意 Specification 应用软删除过滤
+Specification<Product> spec = ...;
+Specification<Product> filtered = filterBean.apply(spec, Product.class);
+
+// 检查实体是否有软删除字段
+boolean hasSoftDelete = filterBean.hasSoftDeleteField(Product.class);
+
+// 预注册实体以缓存
+filterBean.registerEntity(Product.class);
+```
+
 ## SoftDeleteContext（虚拟线程支持）
 
 虚拟线程（Java 21+）场景：
@@ -257,6 +306,26 @@ UPDATE users SET deleted = true WHERE id IN (1, 2, 3) AND deleted = false
 ```java
 // 使用 withIgnore — 推荐用于虚拟线程
 List<User> allUsers = SoftDeleteContext.withIgnore(() -> repository.findAll());
+
+// 使用 withIgnore 带回返回值
+Optional<User> user = SoftDeleteContext.withIgnore(() -> repository.findById(id));
+
+// 手动 push/pop（传统方式，仍支持）
+SoftDeleteContext.pushIgnore();
+try {
+    List<User> all = repository.findAll();
+} finally {
+    SoftDeleteContext.popIgnore();
+}
+
+// 异步边界支持——在创建虚拟线程前捕获上下文
+int savedIgnoreCount = SoftDeleteContext.captureAndResetForAsync();
+try {
+    // 在另一个线程中（如虚拟线程）
+    List<User> all = repository.findAll();  // 遵守原始忽略状态
+} finally {
+    SoftDeleteContext.restoreForAsync(savedIgnoreCount);
+}
 ```
 
 生成的 SQL（临时禁用软删除过滤）：

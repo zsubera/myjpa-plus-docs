@@ -129,6 +129,18 @@ for (User u : allUsers) {
 userRepository.saveAll(allUsers);
 ```
 
+生成的 SQL：
+```sql
+-- 第 3 步：读取旧值
+SELECT * FROM users WHERE id = ?
+
+-- 第 4 步：批量重新加密
+SELECT * FROM users
+-- 然后对每个用户：
+UPDATE users SET phone = ? WHERE id = ?
+-- phone 值：'v2:newly-encrypted-ciphertext'
+```
+
 ## 调整 PBKDF2 迭代次数
 
 根据安全/性能需求配置密钥派生迭代次数：

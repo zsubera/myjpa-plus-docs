@@ -56,6 +56,12 @@ int count = new UpdateSpec<>(User.class)
 UPDATE users SET status = 'INACTIVE', name = '张三' WHERE status = 'PENDING'
 ```
 
+生成的 SQL（当 `name = null` 时）：
+```sql
+UPDATE users SET status = 'INACTIVE' WHERE status = 'PENDING'
+-- name 为 null 时自动跳过
+```
+
 ### 带 OR 条件的更新
 
 ```java
@@ -297,6 +303,21 @@ int count = new DeleteSpec<>(User.class)
 DELETE FROM users WHERE status = 'EXPIRED' LIMIT 1000
 ```
 
+### 作为软删除执行
+
+将硬删除操作转换为 `@SoftDelete` 实体的软删除：
+
+```java
+int count = new DeleteSpec<>(User.class)
+    .eq(User::getStatus, "EXPIRED")
+    .executeAsSoftDelete(entityManager, "deleted", true);
+```
+
+生成的 SQL：
+```sql
+UPDATE users SET deleted = true WHERE status = 'EXPIRED'
+```
+
 ### 构建 CriteriaDelete 不执行
 
 ```java
@@ -370,10 +391,62 @@ template.executeBatchInSeparateTransactions(
     500,
     MyJpaTemplate.BatchFailureStrategy.CONTINUE
 );
+
+// ABORT — 首次失败时停止
+template.executeBatchInSeparateTransactions(
+    template.delete(LogEntry.class)
+        .lt(LogEntry::getTimestamp, cutoffDate),
+    500,
+    MyJpaTemplate.BatchFailureStrategy.ABORT
+);
 ```
 
 生成的 SQL：
 ```sql
 UPDATE users SET status = 'DONE' WHERE status = 'PENDING' LIMIT 500
+```
+
+## 持久化上下文策略
+
+执行批量操作时，JPA 持久化上下文（一级缓存）会在每次写入后自动清除以防止内存泄漏。你可以控制此行为：
+
+| 策略 | 说明 |
+|------|------|
+| `AUTO_CLEAR`（默认） | 批量写入后自动清除持久化上下文 |
+| `DEFER_TO_CALLER` | 将持久化上下文管理留给调用者 |
+
+```java
+// 当需要在同一事务中执行多个批量操作而不在中间清除上下文时使用 DEFER_TO_CALLER
+template.update(User.class)
+    .set(User::getStatus, "INACTIVE")
+    .lt(User::getLastLogin, cutoff)
+    .persistenceStrategy(PersistenceContextStrategy.DEFER_TO_CALLER)
+    .execute(em);
+
+template.delete(LogEntry.class)
+    .lt(LogEntry::getTimestamp, cutoff)
+    .persistenceStrategy(PersistenceContextStrategy.DEFER_TO_CALLER)
+    .execute(em);
+
+// 操作完成后手动清理
+em.flush();
+em.clear();
+```
+
+:::info
+`persistenceStrategy()` 在 `UpdateSpec`、`DeleteSpec` 和 `MergeSpec` 上均可用。
+:::
+
+## 错误处理
+
+```java
+// 无条件时抛出 IllegalStateException（防止意外批量更新/删除）
+new UpdateSpec<>(User.class)
+    .set(User::getStatus, "NEW")
+    .execute(em);  // 抛出异常！
+
+// 无条件操作需要显式调用
+new DeleteSpec<>(User.class)
+    .deleteAll(em);  // 正常——明确意图
 ```
 

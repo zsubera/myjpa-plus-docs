@@ -302,6 +302,21 @@ Generated SQL:
 DELETE FROM users WHERE status = 'EXPIRED' LIMIT 1000
 ```
 
+### Execute as Soft Delete
+
+Convert a hard delete operation into a soft delete for `@SoftDelete` entities:
+
+```java
+int count = new DeleteSpec<>(User.class)
+    .eq(User::getStatus, "EXPIRED")
+    .executeAsSoftDelete(entityManager, "deleted", true);
+```
+
+Generated SQL:
+```sql
+UPDATE users SET deleted = true WHERE status = 'EXPIRED'
+```
+
 ### Build CriteriaDelete Without Executing
 
 ```java

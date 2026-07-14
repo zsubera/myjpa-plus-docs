@@ -262,6 +262,17 @@ UPSERT 操作构建器。支持 PostgreSQL、MySQL、Oracle、SQL Server。
 | `executeBatchInTransaction(entities, em)` | 批量 UPSERT 带事务 |
 | `executeBatchInSeparateTransactions(entities, em, batchSize)` | 每批独立事务提交 |
 
+### PersistenceContextStrategy (v1.3.1+)
+
+批量操作后管理持久化上下文的策略。
+
+| 值 | 说明 |
+|-------|------|
+| `AUTO_CLEAR` | 自动 flush 并清除 L1 缓存（默认，向后兼容） |
+| `DEFER_TO_CALLER` | 将持久化上下文管理留给调用者 |
+
+可通过 `UpdateSpec`、`DeleteSpec` 和 `MergeSpec` 的 `persistenceStrategy()` 方法设置。
+
 ## CteSpec
 
 公共表表达式构建器。
@@ -346,6 +357,36 @@ UPSERT 操作构建器。支持 PostgreSQL、MySQL、Oracle、SQL Server。
 | `findKeysetPage(class, spec, sort, pageSize, lastValues)` | 基于游标的分页 |
 | `findAllCached(class, spec, ttlSeconds)` | 缓存查询 |
 | `findAllCached(class, consumer, ttlSeconds)` | Lambda 缓存查询 |
+
+#### Lambda 便利方法 (v1.3.0+)
+
+所有 `Consumer<QuerySpec<T>>` 重载可直接接受 lambda——无需手动创建 `QuerySpec`：
+
+```java
+// 使用 lambda 的 findOne
+Optional<User> user = template.findOne(User.class, s -> s.eq(User::getId, 1L));
+
+// 使用 lambda 的 count
+long count = template.count(User.class, s -> s.eq(User::getStatus, "ACTIVE"));
+
+// 使用 lambda 的 findAll
+List<User> users = template.findAll(User.class, s -> s.eq(User::getStatus, "ACTIVE"));
+
+// 使用 lambda + 最大结果数的 findAll
+List<User> users = template.findAll(User.class, s -> s.eq(User::getStatus, "ACTIVE"), 100);
+
+// 使用 lambda + 排序的 findAll
+List<User> users = template.findAll(User.class, s -> s.eq(User::getStatus, "ACTIVE"), Sort.by("name"));
+
+// 使用 lambda + 分页的 findAll
+Page<User> page = template.findAll(User.class, s -> s.eq(User::getStatus, "ACTIVE"), PageRequest.of(0, 20));
+
+// 使用 lambda 的 findAllStream
+template.findAllStream(User.class, s -> s.eq(User::getStatus, "ACTIVE"), stream -> stream.forEach(this::process));
+
+// 使用 lambda 的 findAllCached
+List<User> users = template.findAllCached(User.class, s -> s.eq(User::getStatus, "ACTIVE"), 300);
+```
 
 ### 变更方法
 
@@ -473,6 +514,17 @@ try {
 | `findNotDeletedById(id)` | 根据 ID 查找未删除实体 |
 | `countNotDeleted()` | 统计未删除数量 |
 | `countNotDeleted(spec)` | 带条件统计未删除数量 |
+
+### 静态工具
+
+:::info
+这些方法定义在 `DefaultMyJpaRepository` 上，而非 `MyJpaRepository` 接口上。
+:::
+
+| 方法 | 说明 |
+|--------|------|
+| `withAutoFilterOverride(enable, runnable)` | 临时覆盖软删除自动过滤 |
+| `evictEntityCache(em, entityClass)` | 驱逐实体类型的 L1 缓存 |
 
 ## EntityGraphHelper\<T\>
 
@@ -716,6 +768,28 @@ IN 子句批处理工具。自动拆分大型 IN 子句以兼容 Oracle（每批
 | `createdAt` | `Instant` | 创建时间戳（persist 时自动设置） |
 | `updatedAt` | `Instant` | 更新时间戳（persist/update 时自动设置） |
 
+## QueryCacheManager
+
+基于 Caffeine 的查询结果缓存管理器，支持 TTL 过期。实现 `CacheAdapter` 接口。
+
+| 方法 | 说明 |
+|------|------|
+| `get(key)` | 获取缓存值 |
+| `put(key, value, ttlSeconds)` | 写入缓存指定 TTL |
+| `evict(key)` | 移除条目 |
+| `evictByPrefix(prefix)` | 按前缀移除 |
+| `clear()` | 清除所有条目 |
+| `size()` | 当前缓存大小 |
+| `getHitRate()` | 缓存命中率（0.0-1.0） |
+| `getHitCount()` | 缓存命中次数 |
+| `getMissCount()` | 缓存未命中次数 |
+| `resetStats()` | 重置缓存统计 |
+| `close()` | 释放资源 |
+
+:::info
+方法 `putAll()`、`evictAll()` 继承自 `CacheAdapter` 接口。
+:::
+
 ## QueryAggregates
 
 聚合表达式的静态工具类。
@@ -746,10 +820,12 @@ IN 子句批处理工具。自动拆分大型 IN 子句以兼容 Oracle（每批
 | `getHitCount()` | 命中次数 |
 | `getMissCount()` | 未命中次数 |
 | `resetStats()` | 重置统计 |
-| `putAll(entries, defaultTtl)` | 批量写入 |
-| `evictAll(keys)` | 批量移除 |
 | `close()` | 释放资源 |
 | `CacheAdapter.disabled()` | 禁用的缓存适配器工厂方法 |
+
+:::info
+方法 `putAll()`、`evictAll()` 继承自 `CacheAdapter` 接口。
+:::
 
 ## DeepPaginationGuard
 

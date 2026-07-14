@@ -33,8 +33,9 @@ WHERE d.name = 'Engineering'
 List<User> users = userRepository.findAll(
     new QuerySpec<User>()
         .leftJoin(User::getDepartment, j -> j
-            .eq(Department::getName, "Engineering")
-            .isNull(Department::getName))
+            .or(o -> o
+                .eq(Department::getName, "Engineering")
+                .isNull(Department::getName)))
         .toSpecification()
 );
 ```
@@ -43,7 +44,7 @@ List<User> users = userRepository.findAll(
 ```sql
 SELECT u.* FROM users u
 LEFT JOIN departments d ON u.department_id = d.id
-WHERE d.name = 'Engineering' AND d.name IS NULL
+WHERE d.name = 'Engineering' OR d.name IS NULL
 ```
 
 ## FETCH JOIN

@@ -557,3 +557,120 @@ SELECT COUNT(*) FROM users WHERE status = 'ACTIVE'
 SELECT CASE WHEN EXISTS(SELECT 1 FROM users WHERE email = 'john@example.com') THEN true ELSE false END
 ```
 
+## Spec Utility Class
+
+The `Spec` utility provides static methods for combining `Specification<T>` objects using boolean logic.
+
+### ALL (AND)
+
+```java
+Specification<User> activeUser = (root, q, cb) -> cb.equal(root.get("status"), "ACTIVE");
+Specification<User> adultUser = (root, q, cb) -> cb.greaterThan(root.get("age"), 18);
+
+// Both conditions must match
+List<User> users = repository.findAll(Spec.all(activeUser, adultUser));
+```
+
+Generated SQL:
+```sql
+SELECT * FROM users WHERE status = 'ACTIVE' AND age > 18
+```
+
+### ANY (OR)
+
+```java
+// Either condition matches
+List<User> users = repository.findAll(Spec.any(activeUser, adultUser));
+```
+
+Generated SQL:
+```sql
+SELECT * FROM users WHERE status = 'ACTIVE' OR age > 18
+```
+
+### NOT
+
+```java
+// Negate a condition
+List<User> users = repository.findAll(Spec.not(activeUser));
+```
+
+Generated SQL:
+```sql
+SELECT * FROM users WHERE NOT (status = 'ACTIVE')
+```
+
+### ALWAYS / NEVER
+
+```java
+// Match all records (equivalent to no filter)
+List<User> all = repository.findAll(Spec.always());
+
+// Match no records
+List<User> none = repository.findAll(Spec.never());
+```
+
+### WHEN (Conditional)
+
+```java
+// Only apply the specification when the condition is true
+boolean includeInactive = true;
+List<User> users = repository.findAll(Spec.when(includeInactive, activeUser));
+```
+
+## Function Whitelist
+
+Database functions called via `func()` are restricted to a whitelist of ~80 safe functions. You can extend the whitelist via configuration or programmatically.
+
+### Configuration
+
+```yaml
+myjpa-plus:
+  query:
+    extra-safe-functions:
+      - MY_CUSTOM_FUNC
+      - JSONB_EXTRACT_PATH
+    extra-boolean-functions:
+      - MY_BOOL_CHECK
+```
+
+### Programmatic Registration
+
+```java
+// At startup
+FunctionWhitelist.addSafeFunctionNames(List.of("MY_CUSTOM_FUNC", "JSONB_EXTRACT_PATH"));
+FunctionWhitelist.addBooleanFunctionNames(List.of("MY_BOOL_CHECK"));
+
+// Freeze to immutable snapshot (auto-called after adds)
+FunctionWhitelist.freezeExtraFunctionNames();
+```
+
+### Usage with func()
+
+```java
+QuerySpec<User> spec = new QuerySpec<>();
+spec.func(User::getMetadata, "jsonb_exists", "key");
+
+// With condition guard
+spec.func(metadata != null, User::getMetadata, "jsonb_extract_path", "user", "email");
+```
+
+Generated SQL:
+```sql
+SELECT * FROM users WHERE jsonb_exists(metadata, 'key')
+```
+
+### Built-in Function Categories
+
+| Category | Example Functions |
+|----------|------------------|
+| STRING | `UPPER`, `LOWER`, `LENGTH`, `TRIM`, `SUBSTRING`, `CONCAT`, `REPLACE` |
+| MATH | `ABS`, `CEIL`, `FLOOR`, `ROUND`, `MOD`, `POWER`, `SQRT` |
+| DATE | `CURRENT_DATE`, `CURRENT_TIME`, `CURRENT_TIMESTAMP`, `YEAR`, `MONTH`, `DAY` |
+| CONDITION | `COALESCE`, `NULLIF`, `CASE`, `DECODE` |
+| JSON | `JSON_EXTRACT`, `JSON_UNQUOTE`, `JSON_CONTAINS`, `JSON_KEYS` |
+| AGGREGATE | `COUNT`, `SUM`, `AVG`, `MAX`, `MIN` |
+| GEOMETRY/ARRAY | `ST_Distance`, `ST_Within`, `ARRAY_LENGTH`, `UNNEST` |
+| TYPE/UUID | `CAST`, `GEN_RANDOM_UUID`, `UUID_GENERATE_V4` |
+
+

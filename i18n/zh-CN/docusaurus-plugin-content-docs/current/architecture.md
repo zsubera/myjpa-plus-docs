@@ -25,6 +25,9 @@ com.zsubera.jpa
 │   ├── QueryAggregates  — count/sum/avg/max/min 表达式工厂
 │   ├── JoinGroup / OrJoinGroup / OrGroup / NotGroup — 条件分组构建器
 │   ├── BulkConditionSupport — 批量操作条件方法接口
+│   ├── CacheKeyBuilder     — 查询缓存键构建（递归深度保护）
+│   ├── AggregateSFunction  — 聚合函数可序列化接口
+│   ├── AggregateHelper     — 聚合表达式工具类
 │   └── QueryHavingSupport / QueryConditionSupport / QueryCompositionSupport
 │       / QuerySubQuerySupport / QueryJoinSupport / QueryAggregateSupport
 │       / QueryOrderBySupport — QuerySpec 拆分辅助类
@@ -41,22 +44,28 @@ com.zsubera.jpa
 │   ├── DialectStrategy  — 方言特定 UPSERT SQL 生成 SPI
 │   ├── AbstractDialectStrategy — 共享转义逻辑
 │   ├── MysqlDialect / PostgresDialect / OracleDialect / SqlServerDialect
+│   ├── PersistenceContextStrategy — 批量操作后持久化上下文管理策略（AUTO_CLEAR / DEFER_TO_CALLER）
+│   ├── CoalesceUpsertTransformer — UPSERT SQL 参数合并转换器
+│   ├── SqlWithParams       — 原生 SQL + 参数绑定对
 │   └── EntityFieldExtractor — 反射实体字段 → 列名/值对
 │
 ├── template/          # 查询执行与缓存
 │   ├── MyJpaTemplate    — 主查询/批量模板（Spring Bean）
 │   ├── MyJpaTemplateOperations — 模板操作接口（Lambda 查询重载）
-│   ├── QueryCacheManager — 基于 ConcurrentHashMap 的 TTL 缓存（实现 CacheAdapter）
+│   ├── QueryCacheManager — 基于 Caffeine 的 TTL 缓存（实现 CacheAdapter）
 │   ├── CacheAdapter     — 可插拔缓存后端 SPI
 │   ├── CacheInvalidationListener — 实体修改后自动驱逐缓存
 │   ├── BulkOperationTemplate — 带事务管理的批量执行
 │   ├── BatchSaveTemplate — 带 flush/clear 循环的批量持久化/合并
 │   ├── KeysetPaginationHelper — Keyset（游标）分页辅助
 │   ├── QueryBuildHelper — 查询构建辅助（Specification 合并、count 查询）
-│   └── DeepPaginationGuard — 深度分页保护
+│   ├── DeepPaginationGuard — 深度分页保护
+│   ├── CachedQueryResult  — 缓存查询结果包装器
+│   ├── DisabledCacheAdapter — 无操作缓存适配器
+│   └── EntityModifiedEvent — 实体修改事件
 │
-├── projection/        # DTO 与 Tuple 投影（已集成到 QuerySpec）
-│   └── QueryProjectionSupport — 通过 MyJpaTemplate 执行 select()/selectAs()/asDto()
+├── projection/        # DTO 与 Tuple 投影（已移除——功能迁移至 QueryProjectionSupport）
+│   └── ProjectionSpec   — 已移除
 │
 ├── repository/        # 扩展 Spring Data Repository
 │   ├── MyJpaRepository   — 带 Lambda DSL 的 Repository 接口
@@ -90,7 +99,6 @@ com.zsubera.jpa
 │   ├── SlowQueryDataSourceProxy — 基于 JDBC 代理的慢查询检测
 │   ├── SlowQueryDataSourceProxyPostProcessor — DataSource 后处理代理
 │   ├── QueryMetricsCollector — 单例指标（计数、平均、最大）
-│   ├── SqlSlowQueryInterceptor — Hibernate StatementInspector 慢查询检测（已废弃）
 │   ├── SqlSanitizer     — 从 SQL 日志中移除敏感数据
 │   └── SlowQueryListener — 慢查询事件监听接口
 │
@@ -107,14 +115,14 @@ com.zsubera.jpa
 │
 ├── exception/         # 自定义异常
 │   ├── MyJpaPlusException — 带 ErrorCode + 上下文清理的基础异常
-│   ├── QueryBuildException / BulkOperationException / DataAccessException
-│   └── SecurityViolationException / TimeoutException
+│   ├── QueryBuildException / BulkOperationException / MyJpaDataAccessException
+│   └── SecurityViolationException
 │
 └── util/             # 共享工具类
     ├── LambdaUtils        — SerializedLambda → 属性名提取
     ├── IdentifierValidator — SQL 标识符验证 + Unicode 同形字符检测
     ├── InClauseBuilder    — IN/NOT IN 子句自动分批
-    ├── SampledEvictionCache — 基于 ConcurrentHashMap 的采样驱逐缓存
+    ├── SampledEvictionCache — 基于 Caffeine 的有界缓存
     ├── CacheEvictionHelper — L1 缓存选择性驱逐
     ├── PageableHelper     — 分页参数辅助工具
     └── EntityClassResolver / StringHelper / EntityGraphHelper
@@ -230,6 +238,7 @@ CteSpec.as(sql)
   → SQL 注入模式检测（注释、分号、UNION SELECT、WAITFOR DELAY）
   → 未绑定参数检测
   → strictMode = true（硬编码，不可禁用）
+  → 注意：UNION SELECT / UNION ALL SELECT 在递归和非递归 CTE 中属于合法语法，不会被检测为注入特征
 ```
 
 ### 第 4 层：LIKE 通配符转义
@@ -285,17 +294,17 @@ IN 子句硬限制:        5,000 参数（可配置）
 |------|---------|------|
 | QuerySpec | 否 | 声明为可变构建器 |
 | SubQuerySpec | 否 | 声明为可变构建器 |
-| QueryProjectionSupport | 否 | 委托给 QuerySpec（可变构建器） |
+| ProjectionSpec | 已移除 | 功能已迁移到 QueryProjectionSupport |
 | EntityGraphHelper | 否 | 声明为可变构建器 |
 | FunctionWhitelist | 是 | ConcurrentHashMap + AtomicReference 冻结快照 |
 | SoftDeleteContext | 是 | ThreadLocal&lt;Integer&gt; 计数器 |
 | EntityManagerHelper | 是 | ConcurrentHashMap + volatile 字段 |
 | SoftDeleteBulkExecutor | 是 | 无状态（纯静态方法，无共享可变状态） |
-| QueryCacheManager | 是 | ConcurrentHashMap + ReentrantLock.tryLock() |
-| DialectDetector | 是 | ConcurrentHashMap 缓存 |
+| QueryCacheManager | 是 | Caffeine 内置 segment 锁 |
+| DialectDetector | 是 | Caffeine 缓存 |
 | EncryptConverter | 是 | ConcurrentLinkedDeque Cipher 对象池（有界，64 容量），borrow/return 原子操作 |
 | InClauseBuilder | 是 | AtomicReference&lt;Config&gt; |
-| LambdaUtils | 是 | SampledEvictionCache（基于 ConcurrentHashMap） |
+| LambdaUtils | 是 | Caffeine 缓存（底层 SampledEvictionCache） |
 | IdentifierValidator | 是 | Volatile 标志（仅配置时写入） |
-| SampledEvictionCache | 是 | ConcurrentHashMap + tryLock 驱逐 |
+| SampledEvictionCache | 是 | Caffeine 内置并发安全 |
 

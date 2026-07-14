@@ -555,3 +555,120 @@ SELECT COUNT(*) FROM users WHERE status = 'ACTIVE'
 SELECT CASE WHEN EXISTS(SELECT 1 FROM users WHERE email = 'john@example.com') THEN true ELSE false END
 ```
 
+## Spec 工具类
+
+`Spec` 工具类提供静态方法，用于使用布尔逻辑组合 `Specification<T>` 对象。
+
+### ALL（AND）
+
+```java
+Specification<User> activeUser = (root, q, cb) -> cb.equal(root.get("status"), "ACTIVE");
+Specification<User> adultUser = (root, q, cb) -> cb.greaterThan(root.get("age"), 18);
+
+// 两个条件都必须匹配
+List<User> users = repository.findAll(Spec.all(activeUser, adultUser));
+```
+
+生成的 SQL：
+```sql
+SELECT * FROM users WHERE status = 'ACTIVE' AND age > 18
+```
+
+### ANY（OR）
+
+```java
+// 任一条件匹配即可
+List<User> users = repository.findAll(Spec.any(activeUser, adultUser));
+```
+
+生成的 SQL：
+```sql
+SELECT * FROM users WHERE status = 'ACTIVE' OR age > 18
+```
+
+### NOT
+
+```java
+// 取反条件
+List<User> users = repository.findAll(Spec.not(activeUser));
+```
+
+生成的 SQL：
+```sql
+SELECT * FROM users WHERE NOT (status = 'ACTIVE')
+```
+
+### ALWAYS / NEVER
+
+```java
+// 匹配所有记录（等同于无过滤）
+List<User> all = repository.findAll(Spec.always());
+
+// 不匹配任何记录
+List<User> none = repository.findAll(Spec.never());
+```
+
+### WHEN（条件应用）
+
+```java
+// 仅在条件为 true 时应用 Specification
+boolean includeInactive = true;
+List<User> users = repository.findAll(Spec.when(includeInactive, activeUser));
+```
+
+## 函数白名单
+
+通过 `func()` 调用的数据库函数被限制在白名单中的约 80 个安全函数。你可以通过配置或编程方式扩展白名单。
+
+### 配置方式
+
+```yaml
+myjpa-plus:
+  query:
+    extra-safe-functions:
+      - MY_CUSTOM_FUNC
+      - JSONB_EXTRACT_PATH
+    extra-boolean-functions:
+      - MY_BOOL_CHECK
+```
+
+### 编程注册
+
+```java
+// 启动时
+FunctionWhitelist.addSafeFunctionNames(List.of("MY_CUSTOM_FUNC", "JSONB_EXTRACT_PATH"));
+FunctionWhitelist.addBooleanFunctionNames(List.of("MY_BOOL_CHECK"));
+
+// 冻结为不可变快照（添加后自动调用）
+FunctionWhitelist.freezeExtraFunctionNames();
+```
+
+### 在 func() 中使用
+
+```java
+QuerySpec<User> spec = new QuerySpec<>();
+spec.func(User::getMetadata, "jsonb_exists", "key");
+
+// 带条件守卫
+spec.func(metadata != null, User::getMetadata, "jsonb_extract_path", "user", "email");
+```
+
+生成的 SQL：
+```sql
+SELECT * FROM users WHERE jsonb_exists(metadata, 'key')
+```
+
+### 内置函数类别
+
+| 类别 | 示例函数 |
+|------|---------|
+| STRING | `UPPER`、`LOWER`、`LENGTH`、`TRIM`、`SUBSTRING`、`CONCAT`、`REPLACE` |
+| MATH | `ABS`、`CEIL`、`FLOOR`、`ROUND`、`MOD`、`POWER`、`SQRT` |
+| DATE | `CURRENT_DATE`、`CURRENT_TIME`、`CURRENT_TIMESTAMP`、`YEAR`、`MONTH`、`DAY` |
+| CONDITION | `COALESCE`、`NULLIF`、`CASE`、`DECODE` |
+| JSON | `JSON_EXTRACT`、`JSON_UNQUOTE`、`JSON_CONTAINS`、`JSON_KEYS` |
+| AGGREGATE | `COUNT`、`SUM`、`AVG`、`MAX`、`MIN` |
+| GEOMETRY/ARRAY | `ST_Distance`、`ST_Within`、`ARRAY_LENGTH`、`UNNEST` |
+| TYPE/UUID | `CAST`、`GEN_RANDOM_UUID`、`UUID_GENERATE_V4` |
+
+

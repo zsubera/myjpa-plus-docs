@@ -121,7 +121,7 @@ Optional<Object[]> result = CteSpec
     .getSingleResult(em);
 ```
 
-### 获取单个结果
+### 获取单个值
 
 ```java
 Optional<Object[]> result = CteSpec

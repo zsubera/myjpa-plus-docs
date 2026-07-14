@@ -109,6 +109,12 @@ int affected = new MergeSpec<>(User.class)
 
 如果当前没有活动事务，会自动创建新事务。
 
+生成的 SQL（与基本 UPSERT 相同）：
+```sql
+INSERT INTO users (name, email, age) VALUES (?, ?, ?)
+ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, age = EXCLUDED.age
+```
+
 ### 手动事务
 
 ```java
@@ -138,6 +144,12 @@ int total = new MergeSpec<>(User.class)
     .executeBatch(users, em, 100);  // 每批 100 条
 ```
 
+生成的 SQL（PostgreSQL，多行）：
+```sql
+INSERT INTO users (name, email, age) VALUES (?, ?, ?), (?, ?, ?), (?, ?, ?)
+ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, age = EXCLUDED.age
+```
+
 ### 带事务的批量
 
 ```java
@@ -145,6 +157,8 @@ int total = new MergeSpec<>(User.class)
     .onConflict(User::getEmail)
     .executeBatchInTransaction(users, em);
 ```
+
+生成的 SQL（同上多行格式）
 
 ### 分离事务的批量
 
@@ -292,4 +306,18 @@ public void upsertUser(User user) {
 - 高并发下的 UPSERT 操作
 - `save()` 调用中基于 `@Version` 的乐观锁
 - 任何可能因并发修改导致冲突的操作
+
+## 持久化上下文策略
+
+`MergeSpec` 像其他批量操作规约一样支持 `persistenceStrategy()`：
+
+```java
+new MergeSpec<>(User.class)
+    .withEntity(user)
+    .onConflict(User::getEmail)
+    .persistenceStrategy(PersistenceContextStrategy.DEFER_TO_CALLER)
+    .execute(em);
+```
+
+详见 [批量操作 → 持久化上下文策略](bulk-operations.md#持久化上下文策略)。
 
