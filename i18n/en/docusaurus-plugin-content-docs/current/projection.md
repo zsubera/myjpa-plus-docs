@@ -33,6 +33,7 @@ public List<Tuple> getUserNames() {
 public interface UserRepository extends MyJpaRepository<User, Long> {
 }
 
+// When QuerySpec has select(), findAll auto-detects projection mode
 QuerySpec<User> spec = new QuerySpec<User>()
     .select(User::getName, User::getEmail)
     .eq(User::getStatus, "ACTIVE");

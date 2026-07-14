@@ -319,3 +319,18 @@ public void upsertUser(User user) {
 - `@Version`-based optimistic locking in `save()` calls
 - Any operation where concurrent modifications may cause conflicts
 
+## Persistence Context Strategy
+
+`MergeSpec` supports `persistenceStrategy()` like other bulk operation specs:
+
+```java
+new MergeSpec<>(User.class)
+    .withEntity(user)
+    .onConflict(User::getEmail)
+    .persistenceStrategy(PersistenceContextStrategy.DEFER_TO_CALLER)
+    .execute(em);
+```
+
+See [Bulk Operations → Persistence Context Strategy](bulk-operations.md#persistence-context-strategy) for details.
+
+

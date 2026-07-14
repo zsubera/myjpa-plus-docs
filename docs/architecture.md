@@ -13,7 +13,7 @@ This document describes the internal architecture of MyJpa-Plus, including modul
 com.zsubera.jpa
 ├── spec/              # Query specification builder (core)
 │   ├── SFunction        — Serializable functional interface for lambda property extraction
-│   ├── QuerySpec        — Main entry point (implements Specification&lt;T&gt; + ConditionBuilder)
+│   ├── QuerySpec        — Main entry point (implements Specification<T> + ConditionBuilder)
 │   ├── SubQuerySpec     — EXISTS/IN subquery builder (eager evaluation)
 │   ├── CteSpec          — CTE builder (native SQL)
 │   ├── ConditionBuilder — 40+ default condition methods (lazy evaluation)

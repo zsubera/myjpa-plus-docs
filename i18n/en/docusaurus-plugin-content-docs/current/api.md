@@ -128,7 +128,6 @@ All condition methods have a `boolean condition` first-parameter variant. Only a
 | `getLockMode()` | Get lock mode (null if unset) |
 | `applyQuerySettings(query)` | Apply timeout/lock to TypedQuery |
 | `cacheKey()` | Generate cache key string (with value hashes) |
-| `clearCache()` | Clear internal lambda property cache |
 
 ## JoinGroup\<T, J\>
 
@@ -360,6 +359,36 @@ Convenience template for common operations. Auto-configured Spring bean.
 | `findAllCached(class, spec, ttlSeconds)` | Cached query |
 | `findAllCached(class, consumer, ttlSeconds)` | Lambda cached |
 
+#### Lambda Convenience Methods (v1.3.0+)
+
+All `Consumer<QuerySpec<T>>` overloads accept a lambda directly — no need to create `QuerySpec` manually:
+
+```java
+// findOne with lambda
+Optional<User> user = template.findOne(User.class, s -> s.eq(User::getId, 1L));
+
+// count with lambda
+long count = template.count(User.class, s -> s.eq(User::getStatus, "ACTIVE"));
+
+// findAll with lambda
+List<User> users = template.findAll(User.class, s -> s.eq(User::getStatus, "ACTIVE"));
+
+// findAll with lambda + max results
+List<User> users = template.findAll(User.class, s -> s.eq(User::getStatus, "ACTIVE"), 100);
+
+// findAll with lambda + sort
+List<User> users = template.findAll(User.class, s -> s.eq(User::getStatus, "ACTIVE"), Sort.by("name"));
+
+// findAll with lambda + pageable
+Page<User> page = template.findAll(User.class, s -> s.eq(User::getStatus, "ACTIVE"), PageRequest.of(0, 20));
+
+// findAllStream with lambda
+template.findAllStream(User.class, s -> s.eq(User::getStatus, "ACTIVE"), stream -> stream.forEach(this::process));
+
+// findAllCached with lambda
+List<User> users = template.findAllCached(User.class, s -> s.eq(User::getStatus, "ACTIVE"), 300);
+```
+
 ### Mutation Methods
 
 | Method | Description |
@@ -488,6 +517,10 @@ Base repository interface. Extends `JpaRepository<T, ID>` and `JpaSpecificationE
 | `countNotDeleted(spec)` | Count non-deleted with conditions |
 
 ### Static Utility
+
+:::info
+These methods are defined on `DefaultMyJpaRepository`, not on the `MyJpaRepository` interface.
+:::
 
 | Method | Description |
 |--------|-------------|
@@ -685,7 +718,6 @@ Runtime-extensible whitelist for database function names used by `func()`. Funct
 | `containsSafeFunction(name)` | Check if function is in safe whitelist (checks frozen snapshot first, falls back to live collection) |
 | `containsBooleanFunction(name)` | Check if function is in boolean whitelist (checks frozen snapshot first, falls back to live collection) |
 | `reset()` | Clear all extensions (for testing) |
-| `isWhitelistFrozen()` | Check if extra function names have been frozen |
 
 ```java
 // Programmatic registration at startup
@@ -753,9 +785,11 @@ Caffeine-based query result cache manager with TTL expiration. Implements `Cache
 | `getHitCount()` | Cache hit count |
 | `getMissCount()` | Cache miss count |
 | `resetStats()` | Reset cache statistics |
-| `putAll(entries, defaultTtl)` | Batch put |
-| `evictAll(keys)` | Batch evict |
 | `close()` | Release resources |
+
+:::info
+Methods `putAll()`, `evictAll()` are inherited from the `CacheAdapter` interface.
+:::
 
 ## QueryAggregates
 
@@ -787,10 +821,12 @@ Pluggable cache SPI for query result caching.
 | `getHitCount()` | Hit count |
 | `getMissCount()` | Miss count |
 | `resetStats()` | Reset statistics |
-| `putAll(entries, defaultTtl)` | Batch put |
-| `evictAll(keys)` | Batch evict |
 | `close()` | Release resources |
 | `CacheAdapter.disabled()` | Static factory for no-op adapter |
+
+:::info
+Methods `putAll()`, `evictAll()` are inherited from the `CacheAdapter` interface.
+:::
 
 ## DeepPaginationGuard
 
@@ -864,7 +900,6 @@ Transparent AES/GCM encryption converter. Key from `MYJPA_ENCRYPT_KEY` env var o
 | `warmUpKeyCache()` | Async key warmup |
 | `warmUpKeyCacheSync()` | Sync key warmup |
 | `refreshKeyVersion()` | Force key version refresh |
-| `registerTransactionCleanupIfNeeded()` | Auto-clean Cipher ThreadLocal on transaction completion |
 | `validateKeyConfiguration()` | Validate key at startup |
 | `setPbkdf2Iterations(int)` | Configure PBKDF2 iterations |
 | `setSkipSaltCheck(boolean)` | Dev-mode salt skip |
@@ -928,7 +963,6 @@ Spring event published to trigger cache invalidation when entities are modified.
 |--------|-------------|
 | `EntityModifiedEvent(entityClass, affectedRows)` | Construct by entity class |
 | `EntityModifiedEvent(entityName, affectedRows)` | Construct by entity name |
-| `EntityModifiedEvent(entityClass, affectedRows, cause)` | Construct with failure cause |
 | `getEntityName()` | Get entity name |
 | `getAffectedRows()` | Get affected row count |
 

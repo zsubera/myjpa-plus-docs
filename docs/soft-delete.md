@@ -288,5 +288,14 @@ try {
 } finally {
     SoftDeleteContext.popIgnore();
 }
+
+// Async boundary support — capture context before spawning a virtual thread
+int savedIgnoreCount = SoftDeleteContext.captureAndResetForAsync();
+try {
+    // In another thread (e.g., virtual thread)
+    List<User> all = repository.findAll();  // respects original ignore state
+} finally {
+    SoftDeleteContext.restoreForAsync(savedIgnoreCount);
+}
 ```
 

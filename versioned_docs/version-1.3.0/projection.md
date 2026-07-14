@@ -5,18 +5,39 @@ title: Projection Queries
 
 # Projection Queries
 
-Projection queries let you select specific fields instead of loading entire entities. Use `QuerySpec.select()` to choose fields, and `MyJpaTemplate.find()` to execute the projection.
+Projection queries let you select specific fields instead of loading entire entities. Use `QuerySpec.select()` to choose fields.
+
+:::info
+投影查询返回 `Tuple` 或 DTO（非实体），推荐通过 `MyJpaTemplate.find()` 获取类型安全的结果。`MyJpaRepository.findAll(spec)` 也支持投影模式（QuerySpec 带 `select()` 时自动识别），但返回类型为 `List<T>`，需自行转换。
+:::
 
 ## Basic Usage
 
 ### Tuple Projection
 
+**方式一（推荐）：通过 `MyJpaTemplate`——类型安全**
 ```java
+@Autowired
+private MyJpaTemplate template;
+
+public List<Tuple> getUserNames() {
+    QuerySpec<User> spec = new QuerySpec<User>()
+        .select(User::getName, User::getEmail)
+        .eq(User::getStatus, "ACTIVE");
+    return template.find(User.class, spec);
+}
+```
+
+**方式二：通过 `MyJpaRepository`——`QuerySpec` 进入投影模式时自动识别**
+```java
+public interface UserRepository extends MyJpaRepository<User, Long> {
+}
+
+// 使用处——QuerySpec 带 select() 时 findAll 自动执行投影
 QuerySpec<User> spec = new QuerySpec<User>()
     .select(User::getName, User::getEmail)
     .eq(User::getStatus, "ACTIVE");
-
-List<Tuple> results = template.find(User.class, spec);
+List<Tuple> results = (List<Tuple>) (List<?>) repository.findAll(spec);
 ```
 
 Generated SQL:
@@ -26,8 +47,8 @@ SELECT name, email FROM users WHERE status = 'ACTIVE'
 
 ### DTO Constructor Projection
 
+**方式一（推荐）：通过 `MyJpaTemplate`——类型安全**
 ```java
-// DTO class — constructor params matched by name (see DTO Name Matching below)
 public record UserSummary(String name, String email) {}
 
 QuerySpec<User> spec = new QuerySpec<User>()
@@ -36,6 +57,16 @@ QuerySpec<User> spec = new QuerySpec<User>()
     .eq(User::getStatus, "ACTIVE");
 
 List<UserSummary> results = template.find(User.class, spec);
+```
+
+**方式二：通过 `MyJpaRepository`——需自行转换**
+```java
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(User::getName, User::getEmail)
+    .asDto(UserSummary.class)
+    .eq(User::getStatus, "ACTIVE");
+
+List<UserSummary> results = (List<UserSummary>) (List<?>) repository.findAll(spec);
 ```
 
 Generated SQL:
@@ -258,12 +289,22 @@ For regular classes, add `-parameters` to javac:
 
 ## Pagination
 
+**方式一（推荐）：通过 `MyJpaTemplate`**
 ```java
 QuerySpec<User> spec = new QuerySpec<User>()
     .select(User::getName, User::getEmail)
     .eq(User::getStatus, "ACTIVE");
 
 Page<Tuple> page = template.projectionPage(User.class, spec, PageRequest.of(0, 20));
+```
+
+**方式二：通过 `MyJpaRepository`**
+```java
+QuerySpec<User> spec = new QuerySpec<User>()
+    .select(User::getName, User::getEmail)
+    .eq(User::getStatus, "ACTIVE");
+
+Page<Tuple> page = (Page<Tuple>) (Page<?>) repository.findAll(spec, PageRequest.of(0, 20));
 ```
 
 Generated SQL:
@@ -309,24 +350,33 @@ SELECT name FROM users WHERE status = 'ACTIVE' AND deleted = false
 ## Complete Example
 
 ```java
-public record OrderSummary(String customerName, String productName,
-                            BigDecimal amount, Instant orderDate) {}
+@Service
+public class OrderReportService {
 
-QuerySpec<Order> spec = new QuerySpec<Order>()
-    .select(Customer::getName)
-    .select(Product::getName)
-    .select(Order::getAmount)
-    .select(Order::getCreatedAt)
-    .asDto(OrderSummary.class)
-    .join(Order::getCustomer, j -> j
-        .eq(Customer::getCountry, "CN"))
-    .join(Order::getProduct, j -> j
-        .eq(Product::getCategory, "Electronics"))
-    .eq(Order::getStatus, "PAID")
-    .between(Order::getCreatedAt, startDate, endDate)
-    .orderByDesc(Order::getCreatedAt);
+    @Autowired
+    private MyJpaTemplate template;
 
-List<OrderSummary> results = template.find(Order.class, spec);
+    public record OrderSummary(String customerName, String productName,
+                                BigDecimal amount, Instant orderDate) {}
+
+    public List<OrderSummary> findPaidOrders(Instant startDate, Instant endDate) {
+        QuerySpec<Order> spec = new QuerySpec<Order>()
+            .select(Customer::getName)
+            .select(Product::getName)
+            .select(Order::getAmount)
+            .select(Order::getCreatedAt)
+            .asDto(OrderSummary.class)
+            .join(Order::getCustomer, j -> j
+                .eq(Customer::getCountry, "CN"))
+            .join(Order::getProduct, j -> j
+                .eq(Product::getCategory, "Electronics"))
+            .eq(Order::getStatus, "PAID")
+            .between(Order::getCreatedAt, startDate, endDate)
+            .orderByDesc(Order::getCreatedAt);
+
+        return template.find(Order.class, spec);
+    }
+}
 ```
 
 Generated SQL:

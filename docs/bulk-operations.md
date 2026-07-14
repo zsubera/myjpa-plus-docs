@@ -385,6 +385,38 @@ template.executeBatchInSeparateTransactions(
 );
 ```
 
+## Persistence Context Strategy
+
+When executing bulk operations, the JPA persistence context (first-level cache) is automatically cleared after each write to prevent memory leaks. You can control this behavior:
+
+| Strategy | Description |
+|----------|-------------|
+| `AUTO_CLEAR` (default) | Automatically clear persistence context after bulk writes |
+| `DEFER_TO_CALLER` | Leave persistence context management to the caller |
+
+```java
+// Use DEFER_TO_CALLER when you need to execute multiple bulk operations
+// within the same transaction without clearing the context between them
+template.update(User.class)
+    .set(User::getStatus, "INACTIVE")
+    .lt(User::getLastLogin, cutoff)
+    .persistenceStrategy(PersistenceContextStrategy.DEFER_TO_CALLER)
+    .execute(em);
+
+template.delete(LogEntry.class)
+    .lt(LogEntry::getTimestamp, cutoff)
+    .persistenceStrategy(PersistenceContextStrategy.DEFER_TO_CALLER)
+    .execute(em);
+
+// Manual clear when done
+em.flush();
+em.clear();
+```
+
+:::info
+`persistenceStrategy()` is available on `UpdateSpec`, `DeleteSpec`, and `MergeSpec`.
+:::
+
 ## Error Handling
 
 ```java

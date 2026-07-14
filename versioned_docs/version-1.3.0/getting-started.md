@@ -19,14 +19,14 @@ Add the dependency to your `pom.xml`:
 <dependency>
     <groupId>io.github.zsubera</groupId>
     <artifactId>myjpa-plus</artifactId>
-    <version>1.3.1</version>
+    <version>1.3.0</version>
 </dependency>
 ```
 
 Or for Gradle:
 
 ```groovy
-implementation 'io.github.zsubera:myjpa-plus:1.3.1'
+implementation 'io.github.zsubera:myjpa-plus:1.3.0'
 ```
 
 ## Quick Start

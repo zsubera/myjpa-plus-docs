@@ -70,7 +70,6 @@ and versioning follows [Semantic Versioning](https://semver.org/).
 - **QueryAggregates** — Standalone `count`/`sum`/`avg`/`max`/`min` aggregate expression factory methods
 - **softDeleteAll row protection** — `SoftDeleteHelper.softDeleteAll()` adds `maxRows` parameter, defaults to 10000 rows max
 - **multiLike nested field validation** — `multiLike(keyword, "address.city")` now validates each segment via `IdentifierValidator.validateColumnName()`
-- **EncryptConverter transaction cleanup** — `registerTransactionCleanupIfNeeded()` auto-registers `afterCompletion` callback to clean Cipher ThreadLocal in virtual thread scenarios
 - **CacheAdapter SPI** — Pluggable cache adapter interface for Redis/Caffeine/Hazelcast
   - `CacheAdapter` interface, `DisabledCacheAdapter` no-op implementation
   - `QueryCacheManager` implements `CacheAdapter` (backward compatible)

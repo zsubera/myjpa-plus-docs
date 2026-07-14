@@ -63,10 +63,6 @@ Prefix: `myjpa-plus`
 |----------|------|---------|-------------|
 | `myjpa-plus.auto-repository-base-class` | boolean | `true` | Auto-register MyJpaRepository as repository base class |
 
-::: tip Auto-Configuration Resilience (v1.3.1)
-`RepositoryBaseClassPostProcessor` wraps each repository initialization in a try-catch block. A failure in one repository won't prevent the remaining repositories — and the entire application — from starting. Startup logs include per-repository status to help identify problematic repositories.
-:::
-
 ## application.yml Example
 
 ```yaml
@@ -121,7 +117,6 @@ When Spring Data JPA is on the classpath, MyJpa-Plus auto-configures:
 | `cacheAdapter` | `CacheAdapter` | `@ConditionalOnMissingBean` |
 | `cacheInvalidationListener` | `CacheInvalidationListener` | `@ConditionalOnMissingBean` + `cache.auto-invalidation-enabled=true` |
 | `slowQueryDataSourceProxyPostProcessor` | `SlowQueryDataSourceProxyPostProcessor` | `@ConditionalOnMissingBean` + `monitoring.enabled=true` |
-| `repositoryBaseClassPostProcessor` | `RepositoryBaseClassPostProcessor` | `@ConditionalOnMissingBean` + `auto-repository-base-class=true` |
 
 ## Custom MyJpaTemplate
 
@@ -162,4 +157,3 @@ public class CacheConfig {
     }
 }
 ```
-
