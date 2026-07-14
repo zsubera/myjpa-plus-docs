@@ -190,3 +190,4 @@ and versioning follows [Semantic Versioning](https://semver.org/).
 - EXISTS subqueries with `SubQuerySpec`
 - Multi-field LIKE search via `multiLike`
 - Jackson serializer for Hibernate lazy proxies
+

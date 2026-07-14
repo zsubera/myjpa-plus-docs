@@ -1,122 +1,94 @@
 ---
 sidebar_position: 1
-title: Audit Annotations
+title: Audit
 ---
 
-# Audit Annotations
+# Audit
 
-MyJpa-Plus provides audit annotations that automatically populate entity creation/update timestamps and user information.
+MyJpa-Plus auto-configures Spring Data JPA auditing and provides the `AuditUtils` utility class for operational audit logging.
 
-## Basic Usage
+## Spring Data JPA Auditing
 
-### 1. Define Audit Fields
+MyJpa-Plus automatically registers an `AuditorAware<String>` bean that retrieves the current user from Spring Security's `SecurityContextHolder`. You can use Spring Data JPA's standard auditing annotations directly.
+
+### 1. Enable Auditing
+
+Add `@EntityListeners(AuditingEntityListener.class)` to your entity class:
 
 ```java
 @Entity
-@EntityListeners(AuditEntityListener.class)
+@EntityListeners(AuditingEntityListener.class)
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @CreatedAt
+    @CreatedDate
     private Instant createdAt;
 
-    @UpdatedAt
+    @LastModifiedDate
     private Instant updatedAt;
 
     @CreatedBy
     private String createdBy;
 
-    @UpdatedBy
+    @LastModifiedBy
     private String updatedBy;
 
-    private String name;
+    // getters and setters...
 }
 ```
 
-### 2. Implement AuditUserProvider
+### 2. Supported Annotations
 
-```java
-@Component
-public class SecurityAuditUserProvider implements AuditUserProvider {
-    @Override
-    public String getCurrentUser() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
-    }
-}
-```
+| Annotation | Type | Description |
+|------------|------|-------------|
+| `@CreatedDate` | `Instant`, `LocalDateTime`, `Date`, `Long` | Creation timestamp |
+| `@LastModifiedDate` | `Instant`, `LocalDateTime`, `Date`, `Long` | Last modification timestamp |
+| `@CreatedBy` | `String` | Creator |
+| `@LastModifiedBy` | `String` | Last modifier |
 
-## Supported Annotations
+### 3. Custom AuditorAware
 
-### @CreatedAt
-
-Automatically populates creation timestamp. Supported types:
-- `Instant`
-- `LocalDateTime`
-- `Date`
-- `Long` (epoch millis)
-
-```java
-@CreatedAt
-private Instant createdAt;
-```
-
-### @UpdatedAt
-
-Automatically populates update timestamp. Same supported types as above.
-
-```java
-@UpdatedAt
-private Instant updatedAt;
-```
-
-### @CreatedBy
-
-Automatically populates the creating user. Must be `String` type.
-
-```java
-@CreatedBy
-private String createdBy;
-```
-
-### @UpdatedBy
-
-Automatically populates the updating user. Must be `String` type.
-
-```java
-@UpdatedBy
-private String updatedBy;
-```
-
-## Configuration
-
-### Timezone Setting
+MyJpa-Plus uses `SecurityContextAuditorAware` by default (retrieves the current user from Spring Security). You can override it by providing your own `AuditorAware<String>` bean:
 
 ```java
 @Configuration
 public class AuditConfig {
     @Bean
-    public AuditEntityListener auditEntityListener() {
-        AuditEntityListener.setAuditZoneId(ZoneId.of("Asia/Shanghai"));
-        return new AuditEntityListener();
+    public AuditorAware<String> auditorAware() {
+        return () -> Optional.ofNullable(
+            SecurityContextHolder.getContext().getAuthentication()?.getName()
+        );
     }
 }
 ```
 
-### Auto-Configuration
+## AuditUtils
 
-Spring Boot auto-configuration automatically registers `AuditEntityListener`, no manual configuration needed.
+`AuditUtils` is an operational audit logging utility for recording stack traces of dangerous operations (such as unconditional UPDATE/DELETE) for production troubleshooting.
 
-## How It Works
+### Methods
 
-1. `AuditEntityListener` auto-populates fields via `@PrePersist` and `@PreUpdate` callbacks
-2. `AuditUserProvider` interface provides current user information
-3. Field types and annotations are validated at startup; unsupported types throw exceptions
+| Method | Description |
+|--------|-------------|
+| `getCallStack()` | Get formatted call stack string (default depth: 5) |
+| `setMaxStackDepth(int)` | Set maximum call stack depth (1-20) |
+| `getMaxStackDepth()` | Get current maximum call stack depth |
 
-## Notes
+### Configuration
 
-- `@CreatedBy` and `@UpdatedBy` must be `String` type
-- `@CreatedAt` and `@UpdatedAt` must be supported time types
-- Implementations must be registered as Spring Beans
-- Audit fields are automatically populated on every persist/update
+```yaml
+myjpa-plus:
+  audit:
+    stack-trace-depth: 5  # Call stack depth, range 1-20, default 5
+```
+
+### Example
+
+```java
+// Record operation call stack
+String callStack = AuditUtils.getCallStack();
+log.warn("Unconditional update executed from: {}", callStack);
+// Output: UserService <- AdminController <- SecurityFilter
+```

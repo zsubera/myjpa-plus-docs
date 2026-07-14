@@ -160,3 +160,4 @@ System.out.println(sql);
 - `?N` placeholders in SQL templates are replaced with named parameters
 - In strict mode, dangerous SQL keywords throw exceptions
 - **Important**: CTE SQL should be written by developers and should not contain user input
+

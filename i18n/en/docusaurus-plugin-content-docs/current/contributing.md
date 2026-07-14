@@ -56,3 +56,4 @@ mvn spotless:apply
 - Include reproduction steps
 - Include Java/Spring Boot version
 - Include stack trace if applicable
+

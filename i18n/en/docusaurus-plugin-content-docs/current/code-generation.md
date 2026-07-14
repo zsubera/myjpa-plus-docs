@@ -107,3 +107,4 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
 - Generate entity classes from database table structures
 - Batch generate multiple entity classes
 - Code review and template reference
+

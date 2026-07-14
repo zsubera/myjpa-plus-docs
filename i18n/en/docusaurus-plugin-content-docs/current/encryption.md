@@ -189,3 +189,4 @@ Uses a fixed development salt when not configured. For development use only.
 - GCM mode provides authenticated encryption (integrity protection)
 - Production must configure a unique salt
 - Never hardcode keys in source code
+

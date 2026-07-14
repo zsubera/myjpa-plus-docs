@@ -332,3 +332,5 @@ new MergeSpec<>(User.class)
 ```
 
 See [Bulk Operations → Persistence Context Strategy](bulk-operations.md#persistence-context-strategy) for details.
+
+

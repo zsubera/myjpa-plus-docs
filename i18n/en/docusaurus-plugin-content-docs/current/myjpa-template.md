@@ -391,3 +391,4 @@ MyJpaTemplate.DEFAULT_DEEP_PAGINATION_OFFSET_THRESHOLD  // 100000
 // MyJpaTemplate accepts custom max results and pagination threshold
 MyJpaTemplate template = new MyJpaTemplate(5000, 50000);
 ```
+

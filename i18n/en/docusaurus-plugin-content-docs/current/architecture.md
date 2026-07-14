@@ -307,3 +307,4 @@ Recursion depth:          NodeResolver=50, CacheKeyBuilder=128
 | LambdaUtils | Yes | Caffeine cache (SampledEvictionCache backend) |
 | IdentifierValidator | Yes | Volatile flags (write-once at configuration time) |
 | SampledEvictionCache | Yes | Caffeine built-in concurrency safety |
+

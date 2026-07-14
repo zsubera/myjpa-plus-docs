@@ -1,123 +1,94 @@
 ---
 sidebar_position: 1
-title: Audit Annotations
+title: Audit
 ---
 
-# Audit Annotations
+# Audit
 
-MyJpa-Plus provides audit annotations that automatically populate entity creation/update timestamps and user information.
+MyJpa-Plus 自动配置 Spring Data JPA 审计功能，并提供 `AuditUtils` 工具类用于操作审计日志。
 
-## Basic Usage
+## Spring Data JPA 审计
 
-### 1. Define Audit Fields
+MyJpa-Plus 自动注册 `AuditorAware<String>` Bean，从 Spring Security `SecurityContextHolder` 获取当前用户。您可以直接使用 Spring Data JPA 的标准审计注解。
+
+### 1. 启用审计
+
+在实体类上添加 `@EntityListeners(AuditingEntityListener.class)`：
 
 ```java
 @Entity
-@EntityListeners(AuditEntityListener.class)
+@EntityListeners(AuditingEntityListener.class)
 public class Order {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @CreatedAt
+    @CreatedDate
     private Instant createdAt;
 
-    @UpdatedAt
+    @LastModifiedDate
     private Instant updatedAt;
 
     @CreatedBy
     private String createdBy;
 
-    @UpdatedBy
+    @LastModifiedBy
     private String updatedBy;
 
-    private String name;
+    // getters and setters...
 }
 ```
 
-### 2. Implement AuditUserProvider
+### 2. 支持的注解
 
-```java
-@Component
-public class SecurityAuditUserProvider implements AuditUserProvider {
-    @Override
-    public String getCurrentUser() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
-    }
-}
-```
+| 注解 | 类型 | 说明 |
+|------|------|------|
+| `@CreatedDate` | `Instant`, `LocalDateTime`, `Date`, `Long` | 创建时间戳 |
+| `@LastModifiedDate` | `Instant`, `LocalDateTime`, `Date`, `Long` | 最后修改时间戳 |
+| `@CreatedBy` | `String` | 创建人 |
+| `@LastModifiedBy` | `String` | 最后修改人 |
 
-## Supported Annotations
+### 3. 自定义 AuditorAware
 
-### @CreatedAt
-
-Automatically populates creation timestamp. Supported types:
-- `Instant`
-- `LocalDateTime`
-- `Date`
-- `Long` (epoch millis)
-
-```java
-@CreatedAt
-private Instant createdAt;
-```
-
-### @UpdatedAt
-
-Automatically populates update timestamp. Same supported types as above.
-
-```java
-@UpdatedAt
-private Instant updatedAt;
-```
-
-### @CreatedBy
-
-Automatically populates the creating user. Must be `String` type.
-
-```java
-@CreatedBy
-private String createdBy;
-```
-
-### @UpdatedBy
-
-Automatically populates the updating user. Must be `String` type.
-
-```java
-@UpdatedBy
-private String updatedBy;
-```
-
-## Configuration
-
-### Timezone Setting
+MyJpa-Plus 默认使用 `SecurityContextAuditorAware`（从 Spring Security 获取当前用户）。您可以通过提供 `AuditorAware<String>` Bean 覆盖：
 
 ```java
 @Configuration
 public class AuditConfig {
     @Bean
-    public AuditEntityListener auditEntityListener() {
-        AuditEntityListener.setAuditZoneId(ZoneId.of("Asia/Shanghai"));
-        return new AuditEntityListener();
+    public AuditorAware<String> auditorAware() {
+        return () -> Optional.ofNullable(
+            SecurityContextHolder.getContext().getAuthentication()?.getName()
+        );
     }
 }
 ```
 
-### Auto-Configuration
+## AuditUtils
 
-Spring Boot auto-configuration automatically registers `AuditEntityListener`, no manual configuration needed.
+`AuditUtils` 是操作审计日志工具类，用于记录危险操作（如无条件 UPDATE/DELETE）的调用栈信息，便于生产环境追踪。
 
-## How It Works
+### 方法
 
-1. `AuditEntityListener` auto-populates fields via `@PrePersist` and `@PreUpdate` callbacks
-2. `AuditUserProvider` interface provides current user information
-3. Field types and annotations are validated at startup; unsupported types throw exceptions
+| 方法 | 说明 |
+|------|------|
+| `getCallStack()` | 获取格式化调用栈字符串（默认深度 5 层） |
+| `setMaxStackDepth(int)` | 设置最大调用栈深度（1-20） |
+| `getMaxStackDepth()` | 获取当前最大调用栈深度 |
 
-## Notes
+### 配置
 
-- `@CreatedBy` and `@UpdatedBy` must be `String` type
-- `@CreatedAt` and `@UpdatedAt` must be supported time types
-- Implementations must be registered as Spring Beans
-- Audit fields are automatically populated on every persist/update
+```yaml
+myjpa-plus:
+  audit:
+    stack-trace-depth: 5  # 调用栈深度，范围 1-20，默认 5
+```
 
+### 示例
+
+```java
+// 记录操作调用栈
+String callStack = AuditUtils.getCallStack();
+log.warn("Unconditional update executed from: {}", callStack);
+// 输出: UserService <- AdminController <- SecurityFilter
+```
